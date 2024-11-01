@@ -6,7 +6,7 @@ import inspect
 
 # meta developer: Ksenon | MeKsenon
 
-version = (1, 0, 2)
+version = (1, 0, 3)
 # changelog: Исправлена обработка ошибок в команде flux
 
 @loader.tds
