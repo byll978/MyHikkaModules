@@ -5,6 +5,7 @@ import io
 # meta developer: Ksenon | @MeKsenon
 
 __version__ = (1, 0, 0)
+changelog = "тест"
 
 @loader.tds
 class KsenonGPTMod(loader.Module):
