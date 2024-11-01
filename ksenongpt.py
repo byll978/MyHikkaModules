@@ -17,7 +17,7 @@ class KsenonGPTMod(loader.Module):
     def __init__(self):
         self.config = loader.ModuleConfig(
             "github_token",
-            "YOUR_GITHUB_TOKEN_HERE",
+            "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",
             lambda: "Введите ваш GitHub токен для улучшения работы с API"
         )
 
