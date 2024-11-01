@@ -1,13 +1,12 @@
 from .. import loader, utils
-import requests
-import io
 import aiohttp
+import io
 import inspect
 
 # meta developer: Ksenon | MeKsenon
 
-version = (1, 0, 2)
-# changelog: Добавлен плейсхолдер для GitHub токена, улучшена оптимизация
+version = (1, 0, 5)
+# changelog: Улучшена обработка ошибок в команде kupdate
 
 @loader.tds
 class KsenonGPTMod(loader.Module):
@@ -121,8 +120,8 @@ class KsenonGPTMod(loader.Module):
                     remote_content = await (await session.get(data['download_url'])).text()
                     remote_lines = remote_content.splitlines()
 
-                    version_line = next((line for line in remote_lines if line.strip().startswith("version =")), None)
-                    if version_line:
+                    try:
+                        version_line = next(line for line in remote_lines if line.strip().startswith("version ="))
                         new_version = tuple(map(int, version_line.split("=", 1)[1].strip().strip("()").replace(",", "").split()))
                         new_version_str = ".".join(map(str, new_version))
 
@@ -143,7 +142,9 @@ class KsenonGPTMod(loader.Module):
                                 f"<emoji document_id=5370870691140737817>🥳</emoji> <b>У вас последняя версия KsenonGPT!</b>\n\n"
                                 f"<emoji document_id=5447644880824181073>⚠️</emoji><b> Разработчик модуля почти каждый день делают обновления и баг фиксы, так что часто проверяйте!</b>"
                             )
-                    else:
+                    except StopIteration:
                         await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Не удалось найти информацию о версии в удаленном файле.</b>")
+                    except Exception as e:
+                        await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Произошла ошибка при обработке версии: {str(e)}</b>")
                 else:
                     await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Не удалось проверить обновления. Попробуйте позже.</b>")
