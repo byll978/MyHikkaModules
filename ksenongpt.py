@@ -4,7 +4,7 @@ import io
 
 # meta developer: Ksenon | @MeKsenon
 
-__version__ = (1, 0, 0)
+__version__ = (1, 0, 1)
 changelog = "тест"
 
 @loader.tds
