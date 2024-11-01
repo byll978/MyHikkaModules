@@ -5,8 +5,8 @@ import inspect
 
 # meta developer: Ksenon | MeKsenon
 
-version = (1, 0, 5)
-# changelog: Улучшена обработка ошибок в команде kupdate
+version = (1, 0, 6)
+# changelog: Баг фикс, также тестовая версия, стабильная.
 
 @loader.tds
 class KsenonGPTMod(loader.Module):
