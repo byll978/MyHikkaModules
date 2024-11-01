@@ -5,7 +5,7 @@ import inspect
 
 # meta developer: Ksenon | MeKsenon
 
-version = (1, 0, 6)
+version = (1, 0, 7)
 # changelog: Баг фикс, также тестовая версия, стабильная.
 
 @loader.tds
