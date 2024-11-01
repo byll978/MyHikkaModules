@@ -6,14 +6,21 @@ import inspect
 
 # meta developer: Ksenon | MeKsenon
 
-version = (1, 0, 4)
-# changelog: ЛВЛВ бработка ошибок в команде flux
+version = (1, 0, 2)
+# changelog: Добавлен плейсхолдер для GitHub токена, улучшена оптимизация
 
 @loader.tds
 class KsenonGPTMod(loader.Module):
     """🤖 Модуль для работы с KsenonGPT и генерации изображений"""
 
     strings = {"name": "KsenonGPT"}
+
+    def __init__(self):
+        self.config = loader.ModuleConfig(
+            "github_token",
+            "YOUR_GITHUB_TOKEN_HERE",
+            lambda: "Введите ваш GitHub токен для улучшения работы с API"
+        )
 
     async def client_ready(self, client, db):
         self.client = client
@@ -36,10 +43,11 @@ class KsenonGPTMod(loader.Module):
         prompt = f"{args}"
 
         try:
-            response = requests.post(url, headers=headers, json={"prompt": prompt})
-            response.raise_for_status()
-            gpt_response = response.text.strip()
-            gpt_response = gpt_response.encode().decode('unicode-escape').replace('{"response":"', '').rstrip('}')
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, headers=headers, json={"prompt": prompt}) as response:
+                    response.raise_for_status()
+                    gpt_response = await response.text()
+                    gpt_response = gpt_response.encode().decode('unicode-escape').replace('{"response":"', '').rstrip('}')
 
             await utils.answer(
                 message,
@@ -67,13 +75,14 @@ class KsenonGPTMod(loader.Module):
         data = {"prompt": args}
 
         try:
-            response = requests.post(url, headers=headers, json=data)
-            response.raise_for_status()
-            image_url = response.text.strip()
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, headers=headers, json=data) as response:
+                    response.raise_for_status()
+                    image_url = await response.text()
 
-            image_response = requests.get(image_url)
-            image_response.raise_for_status()
-            image_content = io.BytesIO(image_response.content)
+                async with session.get(image_url) as image_response:
+                    image_response.raise_for_status()
+                    image_content = io.BytesIO(await image_response.read())
 
             await message.delete()
             await self.client.send_file(
@@ -89,7 +98,7 @@ class KsenonGPTMod(loader.Module):
                     f"┗ <emoji document_id=5427009714745517609>✅</emoji> <b>Ссылка:</b> <a href='{image_url}'>Изображение</a>"
                 )
             )
-        except requests.RequestException as e:
+        except aiohttp.ClientError as e:
             await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Ошибка при генерации изображения: {str(e)}</b>")
         except Exception as e:
             await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Неизвестная ошибка: {str(e)}</b>")
@@ -104,31 +113,37 @@ class KsenonGPTMod(loader.Module):
         local_version = sys_module.version
         local_version_str = ".".join(map(str, local_version))
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get("https://raw.githubusercontent.com/TheKsenon/MyHikkaModules/refs/heads/main/ksenongpt.py") as response:
+        headers = {"Authorization": f"token {self.config['github_token']}"}
+        async with aiohttp.ClientSession(headers=headers) as session:
+            async with session.get("https://api.github.com/repos/TheKsenon/MyHikkaModules/contents/ksenongpt.py") as response:
                 if response.status == 200:
-                    remote_content = await response.text()
+                    data = await response.json()
+                    remote_content = await (await session.get(data['download_url'])).text()
                     remote_lines = remote_content.splitlines()
 
-                    new_version = tuple(map(int, remote_lines[0].split("=", 1)[1].strip().strip("()").replace(",", "").split()))
-                    new_version_str = ".".join(map(str, new_version))
+                    version_line = next((line for line in remote_lines if line.strip().startswith("version =")), None)
+                    if version_line:
+                        new_version = tuple(map(int, version_line.split("=", 1)[1].strip().strip("()").replace(",", "").split()))
+                        new_version_str = ".".join(map(str, new_version))
 
-                    changelog = next((line.split(":", 1)[1].strip() for line in remote_lines if line.startswith("# changelog:")), "Нет информации")
+                        changelog = next((line.split(":", 1)[1].strip() for line in remote_lines if line.startswith("# changelog:")), "Нет информации")
 
-                    if new_version > local_version:
-                        await utils.answer(message, 
-                            f"<emoji document_id=5420323339723881652>⚠️</emoji> <b>У вас старая версия KsenonGPT!</b>\n\n"
-                            f"<emoji document_id=5449683594425410231>🔼</emoji> <b>Новая версия: {new_version_str}</b>\n"
-                            f"<emoji document_id=5447183459602669338>🔽</emoji> <b>У вас версия: {local_version_str}</b>\n\n"
-                            f"<emoji document_id=5447410659077661506>🌐</emoji> <b>Change-log:</b>\n"
-                            f"<emoji document_id=5458603043203327669>🔔</emoji> <i>{changelog}</i>\n\n"
-                            f"<emoji document_id=5206607081334906820>✔️</emoji> <b>Команда для обновления:</b>\n"
-                            f"<code>.dlmod https://raw.githubusercontent.com/TheKsenon/MyHikkaModules/refs/heads/main/ksenongpt.py</code>"
-                        )
+                        if new_version > local_version:
+                            await utils.answer(message, 
+                                f"<emoji document_id=5420323339723881652>⚠️</emoji> <b>У вас старая версия KsenonGPT!</b>\n\n"
+                                f"<emoji document_id=5449683594425410231>🔼</emoji> <b>Новая версия: {new_version_str}</b>\n"
+                                f"<emoji document_id=5447183459602669338>🔽</emoji> <b>У вас версия: {local_version_str}</b>\n\n"
+                                f"<emoji document_id=5447410659077661506>🌐</emoji> <b>Change-log:</b>\n"
+                                f"<emoji document_id=5458603043203327669>🔔</emoji> <i>{changelog}</i>\n\n"
+                                f"<emoji document_id=5206607081334906820>✔️</emoji> <b>Команда для обновления:</b>\n"
+                                f"<code>.dlmod {data['download_url']}</code>"
+                            )
+                        else:
+                            await utils.answer(message,
+                                f"<emoji document_id=5370870691140737817>🥳</emoji> <b>У вас последняя версия KsenonGPT!</b>\n\n"
+                                f"<emoji document_id=5447644880824181073>⚠️</emoji><b> Разработчик модуля почти каждый день делают обновления и баг фиксы, так что часто проверяйте!</b>"
+                            )
                     else:
-                        await utils.answer(message,
-                            f"<emoji document_id=5370870691140737817>🥳</emoji> <b>У вас последняя версия KsenonGPT!</b>\n\n"
-                            f"<emoji document_id=5447644880824181073>⚠️</emoji><b> Разработчик модуля почти каждый день делают обновления и баг фиксы, так что часто проверяйте!</b>"
-                        )
+                        await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Не удалось найти информацию о версии в удаленном файле.</b>")
                 else:
                     await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Не удалось проверить обновления. Попробуйте позже.</b>")
