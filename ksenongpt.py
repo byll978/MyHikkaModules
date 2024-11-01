@@ -6,8 +6,8 @@ import inspect
 
 # meta developer: Ksenon | MeKsenon
 
-version = (1, 0, 3)
-# changelog: amogusобработка ошибок в команде flux
+version = (1, 0, 4)
+# changelog: ЛВЛВ бработка ошибок в команде flux
 
 @loader.tds
 class KsenonGPTMod(loader.Module):
