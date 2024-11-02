@@ -8,9 +8,14 @@ import requests
 from bs4 import BeautifulSoup
 
 # meta developer: @MeKsenon
+# 🔒      Licensed under the GNU AGPLv3
+# meta desc: Generate text and photo - FREE.
 
-version = (1, 1, 4)
-# changelog: Добавлены подсказки при генерации изображений 
+# requires: gdown
+
+version = (1, 1, 5)
+__version__ = version
+# changelog: Малый баг-фикс 
 
 @loader.tds
 class KsenonGPTMod(loader.Module):
