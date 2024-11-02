@@ -2,6 +2,7 @@ from .. import loader, utils
 import aiohttp
 import io
 import inspect
+import random
 import gdown
 import os
 import requests
@@ -13,10 +14,10 @@ from bs4 import BeautifulSoup
 
 # requires: gdown
 
-version = (1, 1, 6)
+version = (1, 1, 7)
 __version__ = version
 
-# changelog: Оптимизация и улучшения
+# changelog: фикс random
 
 @loader.tds
 class KsenonGPTMod(loader.Module):
