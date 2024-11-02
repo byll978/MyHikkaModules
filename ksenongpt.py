@@ -15,10 +15,25 @@ from bs4 import BeautifulSoup
 
 # requires: gdown
 
-version = (1, 1, 12)
+version = (1, 2, 0)
 __version__ = version
 
-# changelog: Исправлена ошибка обработки URL изображений, обновлено описание .pixart
+# changelog: Большое обновление! GPT-4, фикс Flux & Pixart.
+
+def generate_text_with_gpt4(prompt):
+    url = "http://theksenon.pro/api/groq/generate"
+    headers = {"Content-Type": "application/json"}
+    data = {"prompt": prompt}
+
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
+        result = response.json()
+        return result.get("response")
+    except requests.exceptions.RequestException as e:
+        print(f"Error: {e}")
+        return None
+
 
 @loader.tds
 class KsenonGPTMod(loader.Module):
@@ -67,6 +82,41 @@ class KsenonGPTMod(loader.Module):
 
         await utils.answer(message, f'<emoji document_id=5431456208487716895>🎨</emoji> <b>Генерирую изображение по запросу </b><i>"{args}"</i>...\n<emoji document_id=5334544901428229844>ℹ️</emoji> <b>Модель:</b> <i>{model}</i>\n{hint}')
 
+        if model == "flux-pro":
+            url = "http://theksenon.pro/api/flux/generate"
+            headers = {"Content-Type": "application/json"}
+            data = {"prompt": args}
+
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(url, headers=headers, json=data) as response:
+                        response.raise_for_status()
+                        image_url = await response.text()
+
+                    async with session.get(image_url) as image_response:
+                        image_response.raise_for_status()
+                        image_content = io.BytesIO(await image_response.read())
+
+                await message.delete()
+                await self.client.send_file(
+                    message.chat_id,
+                    image_content,
+                    caption=(
+                        "┏ <emoji document_id=5372981976804366741>🤖</emoji> <b>Изображение успешно создано!</b>\n"
+                        "┃\n"
+                        f"┣ <emoji document_id=5431456208487716895>🎨</emoji> <b>Запрос:</b> <code>{args}</code>\n"
+                        "┃\n"
+                        "┣ <emoji document_id=5447410659077661506>🌐</emoji> <b>Модель:</b> <i>flux-pro</i>\n"
+                        "┃\n"
+                        f"┗ <emoji document_id=5427009714745517609>✅</emoji> <b>Ссылка:</b> <a href='{image_url}'>Изображение</a>"
+                    )
+                )
+            except aiohttp.ClientResponseError as e:
+                await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Ошибка при генерации изображения: {e.status}, {e.message}</b>")
+            except Exception as e:
+                await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Неизвестная ошибка: {str(e)}</b>")
+            return
+
         url = f"http://api.theksenon.pro/api/{model.split('-')[0]}/generate"
         headers = {"Content-Type": "application/json"}
         data = {"prompt": args}
@@ -76,7 +126,13 @@ class KsenonGPTMod(loader.Module):
                 async with session.post(url, headers=headers, json=data) as response:
                     response.raise_for_status()
                     response_text = await response.text()
-                    image_url = json.loads(response_text)["image_url"]
+
+                    try:
+                        image_url = json.loads(response_text)["image_url"]
+                    except json.JSONDecodeError:
+                        image_url = response_text.strip()
+
+                    image_url = image_url.split(".png", 1)[0] + ".png"
 
                 async with session.get(image_url) as image_response:
                     image_response.raise_for_status()
@@ -96,8 +152,8 @@ class KsenonGPTMod(loader.Module):
                     f"┗ <emoji document_id=5427009714745517609>✅</emoji> <b>Ссылка:</b> <a href='{image_url}'>Изображение</a>"
                 )
             )
-        except aiohttp.ClientError as e:
-            await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Ошибка при генерации изображения: {str(e)}</b>")
+        except aiohttp.ClientResponseError as e:
+            await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Ошибка при генерации изображения: {e.status}, {e.message}</b>")
         except Exception as e:
             await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Неизвестная ошибка: {str(e)}</b>")
 
@@ -124,7 +180,7 @@ class KsenonGPTMod(loader.Module):
 
     @loader.command()
     async def gpt(self, message):
-        """💬 Запрос к GPT с Интернетом. .gpt <запрос>"""
+        """🌐 Имеет поиск в интернете, использовать .gpt <запрос>"""
         args = utils.get_args_raw(message)
         if not args:
             await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Укажите запрос для GPT.</b>")
@@ -132,21 +188,34 @@ class KsenonGPTMod(loader.Module):
 
         await utils.answer(message, '<emoji document_id=5443038326535759644>💬</emoji> <b>Генерирую ответ на ваш запрос...</b>')
 
-        url = "http://api.theksenon.pro/api/gpt/generate"
-        headers = {"Content-Type": "application/json"}
-        prompt = f"{args}"
+        try:
+            response = generate_text_with_gpt4(args)
+            if response:
+                await utils.answer(message, f'<emoji document_id=5443038326535759644>💬</emoji> <b>Запрос:</b> <i>{args}</i>\n\n<emoji document_id=5372981976804366741>🤖</emoji> <b>{response}</b>')
+            else:
+                await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Ошибка при получении ответа от GPT.</b>")
+        except Exception as e:
+            await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Неизвестная ошибка: {str(e)}</b>")
+
+
+    @loader.command()
+    async def gpt4(self, message):
+        """🤖 Умная модель GPT-4, использовать .gpt4 <запрос>"""
+        args = utils.get_args_raw(message)
+        if not args:
+            await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Укажите запрос для GPT-4.</b>")
+            return
+
+        await utils.answer(message, '<emoji document_id=5443038326535759644>💬</emoji> <b>Генерирую ответ на ваш запрос...</b>')
 
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, headers=headers, json={"prompt": prompt}) as response:
-                    response.raise_for_status()
-                    gpt_response = await response.text()
-                    gpt_response = gpt_response.encode().decode('unicode-escape').replace('{"response":"', '').rstrip('}')
-
-            await utils.answer(message, f'<emoji document_id=5443038326535759644>💬</emoji> <b>Запрос:</b> <i>{args}</i>\n\n<emoji document_id=5372981976804366741>🤖</emoji> <b>{gpt_response}</b>')
-
+            response = generate_text_with_gpt4(args)
+            if response:
+                await utils.answer(message, f'<emoji document_id=5443038326535759644>💬</emoji> <b>Запрос:</b> <i>{args}</i>\n\n<emoji document_id=5372981976804366741>🤖</emoji> <b>{response}</b>')
+            else:
+                await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Ошибка при получении ответа от GPT-4.</b>")
         except Exception as e:
-            await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Произошла ошибка при получении ответа от GPT: {str(e)}</b>")
+            await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Неизвестная ошибка: {str(e)}</b>")
 
 
     @loader.command()
@@ -195,6 +264,7 @@ class KsenonGPTMod(loader.Module):
                         await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Произошла ошибка при обработке версии: {str(e)}</b>")
                 else:
                     await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Не удалось проверить обновления. Попробуйте позже. ({response.status})</b>")
+
 
     @loader.command()
     async def google(self, message):
