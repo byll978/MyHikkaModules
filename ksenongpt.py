@@ -4,15 +4,17 @@ import io
 import inspect
 import gdown
 import os
+import requests
+from bs4 import BeautifulSoup
 
 # meta developer: @MeKsenon
 
-version = (1, 0, 8)
-# changelog: Баг фикс
+version = (1, 1, 0)
+# changelog: Добавлен поиск в Google
 
 @loader.tds
 class KsenonGPTMod(loader.Module):
-    """🤖 Модуль для работы с KsenonGPT и генерации изображений"""
+    """🤖 Модуль для работы с KsenonGPT, генерации изображений и поиска в Google"""
 
     strings = {"name": "KsenonGPT"}
 
@@ -37,7 +39,6 @@ class KsenonGPTMod(loader.Module):
             except Exception as e:
                 self.log.error(f"Ошибка при загрузке токена GitHub: {e}")
                 return None
-
 
     @loader.command()
     async def gpt(self, message):
@@ -64,7 +65,6 @@ class KsenonGPTMod(loader.Module):
 
         except Exception as e:
             await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Произошла ошибка при получении ответа от GPT: {str(e)}</b>")
-
 
     @loader.command()
     async def flux(self, message):
@@ -94,65 +94,59 @@ class KsenonGPTMod(loader.Module):
             await self.client.send_file(
                 message.chat_id,
                 image_content,
-                caption=(
-                    "┏ <emoji document_id=5372981976804366741>🤖</emoji> <b>Изображение успешно создано!</b>\n"
-                    "┃\n"
-                    f"┣ <emoji document_id=5431456208487716895>🎨</emoji> <b>Запрос:</b> <i>{args}</i>\n"
-                    "┃\n"
-                    "┣ <emoji document_id=5447410659077661506>🌐</emoji> <b>Модель:</b> <i>flux-pro</i>\n"
-                    "┃\n"
-                    f"┗ <emoji document_id=5427009714745517609>✅</emoji> <b>Ссылка:</b> <a href='{image_url}'>Изображение</a>"
-                )
+                caption=f'<emoji document_id=5431456208487716895>🎨</emoji> <b>Изображение по запросу:</b> <i>"{args}"</i>',
+                reply_to=message.reply_to_msg_id
             )
-        except aiohttp.ClientError as e:
-            await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Ошибка при генерации изображения: {str(e)}</b>")
         except Exception as e:
-            await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Неизвестная ошибка: {str(e)}</b>")
-
+            await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Произошла ошибка при генерации изображения: {str(e)}</b>")
 
     @loader.command()
-    async def kupdate(self, message):
-        """- Проверить обновления модуля."""
-        module_name = "KsenonGPT"
-        module = self.lookup(module_name)
-        sys_module = inspect.getmodule(module)
+    async def google(self, message):
+        """🔎 Поиск в Google. .google <запрос>"""
+        query = utils.get_args_raw(message)
+        if not query:
+            await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Укажите запрос для поиска в Google.</b>")
+            return
 
-        local_version = sys_module.version
-        local_version_str = ".".join(map(str, local_version))
+        await utils.answer(message, "<emoji document_id=5188311512791393083>🔎</emoji><b>Ищу информацию в Google...</b>")
 
-        headers = {"Authorization": f"token {self.github_token}"} if self.github_token else {} # Use token if available
-        async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get("https://api.github.com/repos/TheKsenon/MyHikkaModules/contents/ksenongpt.py") as response:
-                if response.status == 200:
-                    data = await response.json()
-                    remote_content = await (await session.get(data['download_url'])).text()
-                    remote_lines = remote_content.splitlines()
+        url = f"https://www.google.com/search?q={query}"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
 
-                    try:
-                        version_line = next(line for line in remote_lines if line.strip().startswith("version ="))
-                        new_version = tuple(map(int, version_line.split("=", 1)[1].strip().strip("()").replace(",", "").split()))
-                        new_version_str = ".".join(map(str, new_version))
+        try:
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, "html.parser")
 
-                        changelog = next((line.split(":", 1)[1].strip() for line in remote_lines if line.startswith("# changelog:")), "Нет информации")
+            search_results = soup.find_all("div", class_="g")
 
-                        if new_version > local_version:
-                            await utils.answer(message,
-                                f"<emoji document_id=5420323339723881652>⚠️</emoji> <b>У вас старая версия KsenonGPT!</b>\n\n"
-                                f"<emoji document_id=5449683594425410231>🔼</emoji> <b>Новая версия: {new_version_str}</b>\n"
-                                f"<emoji document_id=5447183459602669338>🔽</emoji> <b>У вас версия: {local_version_str}</b>\n\n"
-                                f"<emoji document_id=5447410659077661506>🌐</emoji> <b>Change-log:</b>\n"
-                                f"<emoji document_id=5458603043203327669>🔔</emoji> <i>{changelog}</i>\n\n"
-                                f"<emoji document_id=5206607081334906820>✔️</emoji> <b>Команда для обновления:</b>\n"
-                                f"<code>.dlmod {data['download_url']}</code>"
-                            )
-                        else:
-                            await utils.answer(message,
-                                f"<emoji document_id=5370870691140737817>🥳</emoji> <b>У вас последняя версия KsenonGPT!</b>\n\n"
-                                f"<emoji document_id=5447644880824181073>⚠️</emoji><b> Разработчик модуля почти каждый день делают обновления и баг фиксы, так что часто проверяйте!</b>"
-                            )
-                    except StopIteration:
-                        await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Не удалось найти информацию о версии в удаленном файле.</b>")
-                    except Exception as e:
-                        await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Произошла ошибка при обработке версии: {str(e)}</b>")
+            if not search_results:
+                await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Результаты поиска не найдены.</b>")
+                return
+
+            result_text = "┏ <emoji document_id=5188311512791393083>🔎</emoji> <b>Результаты поиска в Google:</b>\n┃\n"
+
+            for i, result in enumerate(search_results[:3], 1):
+                title = result.find("h3")
+                description = result.find("div", class_="VwiC3b")
+                link = result.find("a")
+
+                if title and description and link:
+                    result_text += f"┣ {i}️⃣ <b>{title.text}</b>\n"
+                    result_text += f"┣ 📑 <i>Описание: {description.text.strip()}</i>\n"
+                    result_text += f"┣ 🌐 URL: <a href='{link['href']}'>Ссылка</a>\n"
                 else:
-                    await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Не удалось проверить обновления. Попробуйте позже. ({response.status})</b>")
+                    result_text += f"┣ {i}️⃣ Не удалось извлечь полную информацию для этого результата.\n"
+                
+                if i < 3:
+                    result_text += "┃\n"
+
+            result_text += "┃\n"
+            result_text += "┗ <emoji document_id=5427009714745517609>✅</emoji> KsenonGPT"
+
+            await utils.answer(message, result_text)
+
+        except Exception as e:
+            await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Произошла ошибка при поиске в Google: {str(e)}</b>")
