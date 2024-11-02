@@ -15,6 +15,7 @@ from bs4 import BeautifulSoup
 
 version = (1, 1, 5)
 __version__ = version
+
 # changelog: Малый баг-фикс 
 
 @loader.tds
