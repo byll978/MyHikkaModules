@@ -9,8 +9,8 @@ from bs4 import BeautifulSoup
 
 # meta developer: @MeKsenon
 
-version = (1, 1, 2)
-# changelog: Добавлен поиск в Google
+version = (1, 1, 4)
+# changelog: Добавлены подсказки при генерации изображений 
 
 @loader.tds
 class KsenonGPTMod(loader.Module):
@@ -75,7 +75,18 @@ class KsenonGPTMod(loader.Module):
             await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Пожалуйста, укажите запрос для генерации изображения. </b>")
             return
 
-        await utils.answer(message, f'<emoji document_id=5431456208487716895>🎨</emoji> <b>Генерирую изображение по запросу </b><i>"{args}"</i>')
+        import random
+        hints = [
+            "<emoji document_id=5224607267797606837>☄️</emoji> <b>Добавьте \"pixel graphic\" чтобы получить пиксельное фото.</b>",
+            "<emoji document_id=5224607267797606837>☄️</emoji> <b>Добавьте \"4K-hyper realistic\" чтобы получить реалистичный результат.</b>",
+            "<emoji document_id=5224607267797606837>☄️</emoji> <b>Добавьте \"no blur\" чтобы не было размытия.</b>",
+            "<emoji document_id=5224607267797606837>☄️</emoji> <b>Добавьте \"DSC_0123.JPG\" чтобы было супер реалистично.</b>",
+            "" 
+        ]
+        hint = random.choice(hints)
+
+
+        await utils.answer(message, f'<emoji document_id=5431456208487716895>🎨</emoji> <b>Генерирую изображение по запросу </b><i>"{args}"</i>\n{hint}')
 
         url = "http://theksenon.pro/api/flux/generate"
         headers = {"Content-Type": "application/json"}
