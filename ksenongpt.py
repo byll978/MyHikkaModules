@@ -14,10 +14,10 @@ from bs4 import BeautifulSoup
 
 # requires: gdown
 
-version = (1, 1, 9)
+version = (1, 1, 10)
 __version__ = version
 
-# changelog: фикс random
+# changelog: добавлена команда .pixart and optimized code
 
 @loader.tds
 class KsenonGPTMod(loader.Module):
@@ -27,7 +27,7 @@ class KsenonGPTMod(loader.Module):
 
     async def client_ready(self, client, db):
         self.client = client
-        self._db = db  # Store the database object
+        self._db = db
         self.github_token = await self.get_github_token()
 
     async def get_github_token(self):
@@ -53,6 +53,72 @@ class KsenonGPTMod(loader.Module):
 
         self._db.set("KsenonGPT", "github_token", token)
         return token
+
+    async def generate_image(self, message, args, model):
+        hints = [
+            "<emoji document_id=5224607267797606837>☄️</emoji> <b>Добавьте \"pixel graphic\" чтобы получить пиксельное фото.</b>",
+            "<emoji document_id=5224607267797606837>☄️</emoji> <b>Добавьте \"4K-hyper realistic\" чтобы получить реалистичный результат.</b>",
+            "<emoji document_id=5224607267797606837>☄️</emoji> <b>Добавьте \"no blur\" чтобы не было размытия.</b>",
+            "<emoji document_id=5224607267797606837>☄️</emoji> <b>Добавьте \"DSC_0123.JPG\" чтобы было супер реалистично.</b>",
+            ""
+        ]
+        hint = random.choice(hints)
+
+        await utils.answer(message, f'<emoji document_id=5431456208487716895>🎨</emoji> <b>Генерирую изображение по запросу </b><i>"{args}"</i>...\n<emoji document_id=5334544901428229844>ℹ️</emoji> <b>Модель:</b> <i>{model}</i>\n{hint}')
+
+        url = f"http://api.theksenon.pro/api/{model.split('-')[0]}/generate"
+        headers = {"Content-Type": "application/json"}
+        data = {"prompt": args}
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, headers=headers, json=data) as response:
+                    response.raise_for_status()
+                    image_url = await response.text()
+
+                async with session.get(image_url) as image_response:
+                    image_response.raise_for_status()
+                    image_content = io.BytesIO(await image_response.read())
+
+            await message.delete()
+            await self.client.send_file(
+                message.chat_id,
+                image_content,
+                caption=(
+                    "┏ <emoji document_id=5372981976804366741>🤖</emoji> <b>Изображение успешно создано!</b>\n"
+                    "┃\n"
+                    f"┣ <emoji document_id=5431456208487716895>🎨</emoji> <b>Запрос:</b> <code>{args}</code>\n"
+                    "┃\n"
+                    f"┣ <emoji document_id=5447410659077661506>🌐</emoji> <b>Модель:</b> <i>{model}</i>\n"
+                    "┃\n"
+                    f"┗ <emoji document_id=5427009714745517609>✅</emoji> <b>Ссылка:</b> <a href='{image_url}'>Изображение</a>"
+                )
+            )
+        except aiohttp.ClientError as e:
+            await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Ошибка при генерации изображения: {str(e)}</b>")
+        except Exception as e:
+            await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Неизвестная ошибка: {str(e)}</b>")
+
+
+    @loader.command()
+    async def flux(self, message):
+        """🎨 Сгенерировать фото, модель flux-pro. .flux <prompt>"""
+        args = utils.get_args_raw(message)
+        if not args:
+            await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Пожалуйста, укажите запрос для генерации изображения. </b>")
+            return
+
+        await self.generate_image(message, args, "flux-pro")
+
+    @loader.command()
+    async def pixart(self, message):
+        """🎨 Сгенерировать пиксель-арт, модель pixart-alpha. .pixart <prompt>"""
+        args = utils.get_args_raw(message)
+        if not args:
+            await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Пожалуйста, укажите запрос для генерации изображения. </b>")
+            return
+
+        await self.generate_image(message, args, "pixart-alpha")
 
 
     @loader.command()
@@ -81,58 +147,6 @@ class KsenonGPTMod(loader.Module):
         except Exception as e:
             await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Произошла ошибка при получении ответа от GPT: {str(e)}</b>")
 
-
-    @loader.command()
-    async def flux(self, message):
-        """🎨 Сгенерировать фото, модель flux-pro. .flux <prompt>"""
-        args = utils.get_args_raw(message)
-        if not args:
-            await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Пожалуйста, укажите запрос для генерации изображения. </b>")
-            return
-
-        hints = [
-            "<emoji document_id=5224607267797606837>☄️</emoji> <b>Добавьте \"pixel graphic\" чтобы получить пиксельное фото.</b>",
-            "<emoji document_id=5224607267797606837>☄️</emoji> <b>Добавьте \"4K-hyper realistic\" чтобы получить реалистичный результат.</b>",
-            "<emoji document_id=5224607267797606837>☄️</emoji> <b>Добавьте \"no blur\" чтобы не было размытия.</b>",
-            "<emoji document_id=5224607267797606837>☄️</emoji> <b>Добавьте \"DSC_0123.JPG\" чтобы было супер реалистично.</b>",
-            "" 
-        ]
-        hint = random.choice(hints)
-
-        await utils.answer(message, f'<emoji document_id=5431456208487716895>🎨</emoji> <b>Генерирую изображение по запросу </b><i>"{args}"</i>\n{hint}')
-
-        url = "http://api.theksenon.pro/api/flux/generate"
-        headers = {"Content-Type": "application/json"}
-        data = {"prompt": args}
-
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, headers=headers, json=data) as response:
-                    response.raise_for_status()
-                    image_url = await response.text()
-
-                async with session.get(image_url) as image_response:
-                    image_response.raise_for_status()
-                    image_content = io.BytesIO(await image_response.read())
-
-            await message.delete()
-            await self.client.send_file(
-                message.chat_id,
-                image_content,
-                caption=(
-                    "┏ <emoji document_id=5372981976804366741>🤖</emoji> <b>Изображение успешно создано!</b>\n"
-                    "┃\n"
-                    f"┣ <emoji document_id=5431456208487716895>🎨</emoji> <b>Запрос:</b> <code>{args}</code>\n"
-                    "┃\n"
-                    "┣ <emoji document_id=5447410659077661506>🌐</emoji> <b>Модель:</b> <i>flux-pro</i>\n"
-                    "┃\n"
-                    f"┗ <emoji document_id=5427009714745517609>✅</emoji> <b>Ссылка:</b> <a href='{image_url}'>Изображение</a>"
-                )
-            )
-        except aiohttp.ClientError as e:
-            await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Ошибка при генерации изображения: {str(e)}</b>")
-        except Exception as e:
-            await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Неизвестная ошибка: {str(e)}</b>")
 
 
     @loader.command()
