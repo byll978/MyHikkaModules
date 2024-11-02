@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup
 
 # requires: gdown
 
-version = (1, 1, 8)
+version = (1, 1, 9)
 __version__ = version
 
 # changelog: фикс random
