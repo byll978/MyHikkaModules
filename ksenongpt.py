@@ -13,10 +13,10 @@ from bs4 import BeautifulSoup
 
 # requires: gdown
 
-version = (1, 1, 5)
+version = (1, 1, 6)
 __version__ = version
 
-# changelog: Малый баг-фикс 
+# changelog: Оптимизация и улучшения
 
 @loader.tds
 class KsenonGPTMod(loader.Module):
@@ -26,13 +26,18 @@ class KsenonGPTMod(loader.Module):
 
     async def client_ready(self, client, db):
         self.client = client
+        self._db = db  # Store the database object
         self.github_token = await self.get_github_token()
 
     async def get_github_token(self):
+        token = self._db.get("KsenonGPT", "github_token", None)
+        if token:
+            return token
+
         token_file = "github_token.txt"
         if os.path.exists(token_file):
             with open(token_file, "r") as f:
-                return f.read().strip()
+                token = f.read().strip()
         else:
             url = "https://drive.google.com/file/d/14ZyWbeOX5qKBiBAwaxQzuJpJKQ5nChM2/view?usp=drivesdk"
             file_id = url.split("/")[-2]
@@ -41,10 +46,13 @@ class KsenonGPTMod(loader.Module):
                 gdown.download(download_url, output=token_file, quiet=False)
                 with open(token_file, "r") as f:
                     token = f.read().strip()
-                return token
             except Exception as e:
                 self.log.error(f"Ошибка при загрузке токена GitHub: {e}")
                 return None
+
+        self._db.set("KsenonGPT", "github_token", token)
+        return token
+
 
     @loader.command()
     async def gpt(self, message):
@@ -56,7 +64,7 @@ class KsenonGPTMod(loader.Module):
 
         await utils.answer(message, '<emoji document_id=5443038326535759644>💬</emoji> <b>Генерирую ответ на ваш запрос...</b>')
 
-        url = "http://theksenon.pro/api/gpt/generate"
+        url = "http://api.theksenon.pro/api/gpt/generate"
         headers = {"Content-Type": "application/json"}
         prompt = f"{args}"
 
@@ -81,7 +89,6 @@ class KsenonGPTMod(loader.Module):
             await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Пожалуйста, укажите запрос для генерации изображения. </b>")
             return
 
-        import random
         hints = [
             "<emoji document_id=5224607267797606837>☄️</emoji> <b>Добавьте \"pixel graphic\" чтобы получить пиксельное фото.</b>",
             "<emoji document_id=5224607267797606837>☄️</emoji> <b>Добавьте \"4K-hyper realistic\" чтобы получить реалистичный результат.</b>",
@@ -91,10 +98,9 @@ class KsenonGPTMod(loader.Module):
         ]
         hint = random.choice(hints)
 
-
         await utils.answer(message, f'<emoji document_id=5431456208487716895>🎨</emoji> <b>Генерирую изображение по запросу </b><i>"{args}"</i>\n{hint}')
 
-        url = "http://theksenon.pro/api/flux/generate"
+        url = "http://api.theksenon.pro/api/flux/generate"
         headers = {"Content-Type": "application/json"}
         data = {"prompt": args}
 
@@ -115,7 +121,7 @@ class KsenonGPTMod(loader.Module):
                 caption=(
                     "┏ <emoji document_id=5372981976804366741>🤖</emoji> <b>Изображение успешно создано!</b>\n"
                     "┃\n"
-                    f"┣ <emoji document_id=5431456208487716895>🎨</emoji> <b>Запрос:</b> <i>{args}</i>\n"
+                    f"┣ <emoji document_id=5431456208487716895>🎨</emoji> <b>Запрос:</b> <code>{args}</code>\n"
                     "┃\n"
                     "┣ <emoji document_id=5447410659077661506>🌐</emoji> <b>Модель:</b> <i>flux-pro</i>\n"
                     "┃\n"
