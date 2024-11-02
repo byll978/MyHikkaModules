@@ -6,6 +6,7 @@ import random
 import gdown
 import os
 import requests
+import json
 from bs4 import BeautifulSoup
 
 # meta developer: @MeKsenon
@@ -14,10 +15,10 @@ from bs4 import BeautifulSoup
 
 # requires: gdown
 
-version = (1, 1, 10)
+version = (1, 1, 12)
 __version__ = version
 
-# changelog: добавлена команда .pixart and optimized code
+# changelog: Исправлена ошибка обработки URL изображений, обновлено описание .pixart
 
 @loader.tds
 class KsenonGPTMod(loader.Module):
@@ -74,7 +75,8 @@ class KsenonGPTMod(loader.Module):
             async with aiohttp.ClientSession() as session:
                 async with session.post(url, headers=headers, json=data) as response:
                     response.raise_for_status()
-                    image_url = await response.text()
+                    response_text = await response.text()
+                    image_url = json.loads(response_text)["image_url"]
 
                 async with session.get(image_url) as image_response:
                     image_response.raise_for_status()
@@ -112,14 +114,13 @@ class KsenonGPTMod(loader.Module):
 
     @loader.command()
     async def pixart(self, message):
-        """🎨 Сгенерировать пиксель-арт, модель pixart-alpha. .pixart <prompt>"""
+        """🖼️ Сгенерировать изображение, модель pixart-alpha. .pixart <prompt>"""
         args = utils.get_args_raw(message)
         if not args:
             await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Пожалуйста, укажите запрос для генерации изображения. </b>")
             return
 
         await self.generate_image(message, args, "pixart-alpha")
-
 
     @loader.command()
     async def gpt(self, message):
@@ -146,7 +147,6 @@ class KsenonGPTMod(loader.Module):
 
         except Exception as e:
             await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Произошла ошибка при получении ответа от GPT: {str(e)}</b>")
-
 
 
     @loader.command()
