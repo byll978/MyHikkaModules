@@ -15,13 +15,13 @@ from bs4 import BeautifulSoup
 
 # requires: gdown
 
-version = (1, 2, 0)
+version = (1, 2, 1)
 __version__ = version
 
-# changelog: Большое обновление! GPT-4, фикс Flux & Pixart.
+# changelog: Исправлены модели GPT и GPT-4.
 
-def generate_text_with_gpt4(prompt):
-    url = "http://theksenon.pro/api/groq/generate"
+def generate_text_with_gpt(prompt, model="gpt"):
+    url = f"http://theksenon.pro/api/{model}/generate"
     headers = {"Content-Type": "application/json"}
     data = {"prompt": prompt}
 
@@ -189,7 +189,7 @@ class KsenonGPTMod(loader.Module):
         await utils.answer(message, '<emoji document_id=5443038326535759644>💬</emoji> <b>Генерирую ответ на ваш запрос...</b>')
 
         try:
-            response = generate_text_with_gpt4(args)
+            response = generate_text_with_gpt(args, "gpt") # указываем модель gpt
             if response:
                 await utils.answer(message, f'<emoji document_id=5443038326535759644>💬</emoji> <b>Запрос:</b> <i>{args}</i>\n\n<emoji document_id=5372981976804366741>🤖</emoji> <b>{response}</b>')
             else:
@@ -209,7 +209,7 @@ class KsenonGPTMod(loader.Module):
         await utils.answer(message, '<emoji document_id=5443038326535759644>💬</emoji> <b>Генерирую ответ на ваш запрос...</b>')
 
         try:
-            response = generate_text_with_gpt4(args)
+            response = generate_text_with_gpt(args, "gpt4") # указываем модель gpt4
             if response:
                 await utils.answer(message, f'<emoji document_id=5443038326535759644>💬</emoji> <b>Запрос:</b> <i>{args}</i>\n\n<emoji document_id=5372981976804366741>🤖</emoji> <b>{response}</b>')
             else:
