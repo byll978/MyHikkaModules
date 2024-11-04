@@ -9,16 +9,12 @@ import requests
 import json
 from bs4 import BeautifulSoup
 
-# meta developer: @MeKsenon
-# 🔒      Licensed under the GNU AGPLv3
-# meta desc: Generate text and photo - FREE.
+# meta developer: Ksenon | @MeKsenon
 
-# requires: gdown
-
-version = (1, 2, 1)
+version = (1, 2, 9)
 __version__ = version
 
-# changelog: Исправлены модели GPT и GPT-4.
+# changelog: Большое обновление! Stable Diffusion 3.5 Large, фикс GPT-4!
 
 def generate_text_with_gpt(prompt, model="gpt"):
     url = f"http://theksenon.pro/api/{model}/generate"
@@ -80,14 +76,27 @@ class KsenonGPTMod(loader.Module):
         ]
         hint = random.choice(hints)
 
-        await utils.answer(message, f'<emoji document_id=5431456208487716895>🎨</emoji> <b>Генерирую изображение по запросу </b><i>"{args}"</i>...\n<emoji document_id=5334544901428229844>ℹ️</emoji> <b>Модель:</b> <i>{model}</i>\n{hint}')
+        display_model = model 
+        if model == "flux-pro":
+            display_model = "flux-pro-mv" 
+        elif model == "sdxl":
+            display_model = "stable-diffusion-3.5-large"
+
+
+        await utils.answer(message, f'<emoji document_id=5431456208487716895>🎨</emoji> <b>Генерирую изображение по запросу </b><i>"{args}"</i>...\n<emoji document_id=5334544901428229844>ℹ️</emoji> <b>Модель:</b> <i>{display_model}</i>\n{hint}') # Display modified name here as well
 
         if model == "flux-pro":
             url = "http://theksenon.pro/api/flux/generate"
-            headers = {"Content-Type": "application/json"}
-            data = {"prompt": args}
+        elif model == "sdxl":
+            url = "http://theksenon.pro/api/sdxl/generate"
+        else:  # pixart-alpha
+            url = f"http://api.theksenon.pro/api/{model.split('-')[0]}/generate"
 
-            try:
+        headers = {"Content-Type": "application/json"}
+        data = {"prompt": args}
+
+        try:
+            if model in ("flux-pro", "sdxl"):
                 async with aiohttp.ClientSession() as session:
                     async with session.post(url, headers=headers, json=data) as response:
                         response.raise_for_status()
@@ -96,47 +105,22 @@ class KsenonGPTMod(loader.Module):
                     async with session.get(image_url) as image_response:
                         image_response.raise_for_status()
                         image_content = io.BytesIO(await image_response.read())
+            else: # pixart-alpha
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(url, headers=headers, json=data) as response:
+                        response.raise_for_status()
+                        response_text = await response.text()
 
-                await message.delete()
-                await self.client.send_file(
-                    message.chat_id,
-                    image_content,
-                    caption=(
-                        "┏ <emoji document_id=5372981976804366741>🤖</emoji> <b>Изображение успешно создано!</b>\n"
-                        "┃\n"
-                        f"┣ <emoji document_id=5431456208487716895>🎨</emoji> <b>Запрос:</b> <code>{args}</code>\n"
-                        "┃\n"
-                        "┣ <emoji document_id=5447410659077661506>🌐</emoji> <b>Модель:</b> <i>flux-pro</i>\n"
-                        "┃\n"
-                        f"┗ <emoji document_id=5427009714745517609>✅</emoji> <b>Ссылка:</b> <a href='{image_url}'>Изображение</a>"
-                    )
-                )
-            except aiohttp.ClientResponseError as e:
-                await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Ошибка при генерации изображения: {e.status}, {e.message}</b>")
-            except Exception as e:
-                await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Неизвестная ошибка: {str(e)}</b>")
-            return
+                        try:
+                            image_url = json.loads(response_text)["image_url"]
+                        except json.JSONDecodeError:
+                            image_url = response_text.strip()
 
-        url = f"http://api.theksenon.pro/api/{model.split('-')[0]}/generate"
-        headers = {"Content-Type": "application/json"}
-        data = {"prompt": args}
+                        image_url = image_url.split(".png", 1)[0] + ".png"
 
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, headers=headers, json=data) as response:
-                    response.raise_for_status()
-                    response_text = await response.text()
-
-                    try:
-                        image_url = json.loads(response_text)["image_url"]
-                    except json.JSONDecodeError:
-                        image_url = response_text.strip()
-
-                    image_url = image_url.split(".png", 1)[0] + ".png"
-
-                async with session.get(image_url) as image_response:
-                    image_response.raise_for_status()
-                    image_content = io.BytesIO(await image_response.read())
+                    async with session.get(image_url) as image_response:
+                        image_response.raise_for_status()
+                        image_content = io.BytesIO(await image_response.read())
 
             await message.delete()
             await self.client.send_file(
@@ -147,7 +131,7 @@ class KsenonGPTMod(loader.Module):
                     "┃\n"
                     f"┣ <emoji document_id=5431456208487716895>🎨</emoji> <b>Запрос:</b> <code>{args}</code>\n"
                     "┃\n"
-                    f"┣ <emoji document_id=5447410659077661506>🌐</emoji> <b>Модель:</b> <i>{model}</i>\n"
+                    f"┣ <emoji document_id=5447410659077661506>🌐</emoji> <b>Модель:</b> <i>{display_model}</i>\n"
                     "┃\n"
                     f"┗ <emoji document_id=5427009714745517609>✅</emoji> <b>Ссылка:</b> <a href='{image_url}'>Изображение</a>"
                 )
@@ -160,13 +144,24 @@ class KsenonGPTMod(loader.Module):
 
     @loader.command()
     async def flux(self, message):
-        """🎨 Сгенерировать фото, модель flux-pro. .flux <prompt>"""
+        """🎨 Сгенерировать фото, модель flux-pro-mv. .flux <prompt>"""
         args = utils.get_args_raw(message)
         if not args:
             await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Пожалуйста, укажите запрос для генерации изображения. </b>")
             return
 
         await self.generate_image(message, args, "flux-pro")
+
+    @loader.command()
+    async def sd3(self, message):
+        """🚀 Сгенерировать фото, модель sd3. .sd3 <prompt>"""
+        args = utils.get_args_raw(message)
+        if not args:
+            await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Пожалуйста, укажите запрос для генерации изображения. </b>")
+            return
+
+        await self.generate_image(message, args, "sdxl")
+
 
     @loader.command()
     async def pixart(self, message):
@@ -189,7 +184,7 @@ class KsenonGPTMod(loader.Module):
         await utils.answer(message, '<emoji document_id=5443038326535759644>💬</emoji> <b>Генерирую ответ на ваш запрос...</b>')
 
         try:
-            response = generate_text_with_gpt(args, "gpt") # указываем модель gpt
+            response = generate_text_with_gpt(args, "gpt")
             if response:
                 await utils.answer(message, f'<emoji document_id=5443038326535759644>💬</emoji> <b>Запрос:</b> <i>{args}</i>\n\n<emoji document_id=5372981976804366741>🤖</emoji> <b>{response}</b>')
             else:
@@ -209,7 +204,7 @@ class KsenonGPTMod(loader.Module):
         await utils.answer(message, '<emoji document_id=5443038326535759644>💬</emoji> <b>Генерирую ответ на ваш запрос...</b>')
 
         try:
-            response = generate_text_with_gpt(args, "gpt4") # указываем модель gpt4
+            response = generate_text_with_gpt(args, "groq")
             if response:
                 await utils.answer(message, f'<emoji document_id=5443038326535759644>💬</emoji> <b>Запрос:</b> <i>{args}</i>\n\n<emoji document_id=5372981976804366741>🤖</emoji> <b>{response}</b>')
             else:
