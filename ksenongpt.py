@@ -11,10 +11,10 @@ from bs4 import BeautifulSoup
 
 # meta developer: Ksenon | @MeKsenon
 
-version = (1, 2, 9)
+version = (1, 3, 0)
 __version__ = version
 
-# changelog: Большое обновление! Stable Diffusion 3.5 Large, фикс GPT-4!
+# changelog: Добавлена модель Phi 3.5 Mini(text), баг фиксы.
 
 def generate_text_with_gpt(prompt, model="gpt"):
     url = f"http://theksenon.pro/api/{model}/generate"
@@ -30,6 +30,15 @@ def generate_text_with_gpt(prompt, model="gpt"):
         print(f"Error: {e}")
         return None
 
+def generate_phi_text(prompt):
+    url = "http://theksenon.pro/api/phi/generate"
+    headers = {"Content-Type": "application/json"}
+    data = {"prompt": prompt}
+    response = requests.post(url, headers=headers, json=data)
+    if response.status_code == 200:
+        return response.json()["response"]
+    else:
+        return "Ошибка при генерации текста"
 
 @loader.tds
 class KsenonGPTMod(loader.Module):
@@ -83,7 +92,7 @@ class KsenonGPTMod(loader.Module):
             display_model = "stable-diffusion-3.5-large"
 
 
-        await utils.answer(message, f'<emoji document_id=5431456208487716895>🎨</emoji> <b>Генерирую изображение по запросу </b><i>"{args}"</i>...\n<emoji document_id=5334544901428229844>ℹ️</emoji> <b>Модель:</b> <i>{display_model}</i>\n{hint}') # Display modified name here as well
+        await utils.answer(message, f'<emoji document_id=5431456208487716895>🎨</emoji> <b>Генерирую изображение по запросу </b><code>"{args}"</code>...\n<emoji document_id=5334544901428229844>ℹ️</emoji> <b>Модель:</b> <i>{display_model}</i>\n{hint}') 
 
         if model == "flux-pro":
             url = "http://theksenon.pro/api/flux/generate"
@@ -186,7 +195,7 @@ class KsenonGPTMod(loader.Module):
         try:
             response = generate_text_with_gpt(args, "gpt")
             if response:
-                await utils.answer(message, f'<emoji document_id=5443038326535759644>💬</emoji> <b>Запрос:</b> <i>{args}</i>\n\n<emoji document_id=5372981976804366741>🤖</emoji> <b>{response}</b>')
+                await utils.answer(message, f'<emoji document_id=5443038326535759644>💬</emoji> <b>Запрос:</b> <code>{args}</code>\n\n<emoji document_id=5372981976804366741>🤖</emoji> <b>{response}</b>')
             else:
                 await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Ошибка при получении ответа от GPT.</b>")
         except Exception as e:
@@ -206,7 +215,7 @@ class KsenonGPTMod(loader.Module):
         try:
             response = generate_text_with_gpt(args, "groq")
             if response:
-                await utils.answer(message, f'<emoji document_id=5443038326535759644>💬</emoji> <b>Запрос:</b> <i>{args}</i>\n\n<emoji document_id=5372981976804366741>🤖</emoji> <b>{response}</b>')
+                await utils.answer(message, f'<emoji document_id=5443038326535759644>💬</emoji> <b>Запрос:</b> <code>{args}</code>\n\n<emoji document_id=5372981976804366741>🤖</emoji> <b>{response}</b>')
             else:
                 await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Ошибка при получении ответа от GPT-4.</b>")
         except Exception as e:
@@ -311,3 +320,22 @@ class KsenonGPTMod(loader.Module):
             await message.edit(f"<emoji document_id=5210952531676504517>❌</emoji><b> Произошла ошибка при выполнении запроса: {e}</b>")
         except Exception as e:
             await message.edit(f"<emoji document_id=5210952531676504517>❌</emoji><b> Произошла неожиданная ошибка: {e}</b>")
+
+    @loader.command()
+    async def phi(self, message):
+        """💬 Phi 3.5-Mini, использовать: .phi <запрос>"""
+        args = utils.get_args_raw(message)
+        if not args:
+            await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Укажите запрос для Phi.</b>")
+            return
+
+        await utils.answer(message, '<emoji document_id=5443038326535759644>💬</emoji> <b>Генерирую ответ на ваш запрос...</b>')
+
+        try:
+            response = generate_phi_text(args)
+            if response:
+                await utils.answer(message, f'<emoji document_id=5443038326535759644>💬</emoji> <b>Запрос:</b> <code>{args}</code>\n\n<emoji document_id=5372981976804366741>🤖</emoji> <b>{response}</b>')
+            else:
+                await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Ошибка при получении ответа от Phi.</b>")
+        except Exception as e:
+            await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Неизвестная ошибка: {str(e)}</b>")
