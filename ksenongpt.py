@@ -11,10 +11,10 @@ from bs4 import BeautifulSoup
 
 # meta developer: Ksenon | @MeKsenon
 
-version = (1, 3, 0)
+version = (1, 3, 1)
 __version__ = version
 
-# changelog: Добавлена модель Phi 3.5 Mini(text), баг фиксы.
+# changelog: ОБЯЗАТЕЛЬНО! ДОБАВЛЕНА МОДЕЛЬ FASTFLUX. Сейчас не работают flux & sd3 & gpt.
 
 def generate_text_with_gpt(prompt, model="gpt"):
     url = f"http://theksenon.pro/api/{model}/generate"
@@ -55,7 +55,6 @@ class KsenonGPTMod(loader.Module):
         token = self._db.get("KsenonGPT", "github_token", None)
         if token:
             return token
-
         token_file = "github_token.txt"
         if os.path.exists(token_file):
             with open(token_file, "r") as f:
@@ -71,7 +70,6 @@ class KsenonGPTMod(loader.Module):
             except Exception as e:
                 self.log.error(f"Ошибка при загрузке токена GitHub: {e}")
                 return None
-
         self._db.set("KsenonGPT", "github_token", token)
         return token
 
@@ -84,20 +82,22 @@ class KsenonGPTMod(loader.Module):
             ""
         ]
         hint = random.choice(hints)
-
-        display_model = model 
+        display_model = model
         if model == "flux-pro":
-            display_model = "flux-pro-mv" 
+            display_model = "flux-pro-mv"
         elif model == "sdxl":
             display_model = "stable-diffusion-3.5-large"
+        elif model == "fastflux":
+            display_model = "fastflux(test)"
 
-
-        await utils.answer(message, f'<emoji document_id=5431456208487716895>🎨</emoji> <b>Генерирую изображение по запросу </b><code>"{args}"</code>...\n<emoji document_id=5334544901428229844>ℹ️</emoji> <b>Модель:</b> <i>{display_model}</i>\n{hint}') 
+        await utils.answer(message, f'<emoji document_id=5431456208487716895>🎨</emoji> <b>Генерирую изображение по запросу </b><code>"{args}"</code>...\n<emoji document_id=5334544901428229844>ℹ️</emoji> <b>Модель:</b> <i>{display_model}</i>\n{hint}')
 
         if model == "flux-pro":
             url = "http://theksenon.pro/api/flux/generate"
         elif model == "sdxl":
             url = "http://theksenon.pro/api/sdxl/generate"
+        elif model == "fastflux":
+            url = "http://theksenon.pro/api/fastflux/generate"
         else:  # pixart-alpha
             url = f"http://api.theksenon.pro/api/{model.split('-')[0]}/generate"
 
@@ -105,32 +105,24 @@ class KsenonGPTMod(loader.Module):
         data = {"prompt": args}
 
         try:
-            if model in ("flux-pro", "sdxl"):
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(url, headers=headers, json=data) as response:
-                        response.raise_for_status()
-                        image_url = await response.text()
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, headers=headers, json=data) as response:
+                    response.raise_for_status()
+                    data = await response.json()
+                    if model in ("flux-pro", "sdxl", "fastflux"):
+                        image_url = data.get("image_url")
 
-                    async with session.get(image_url) as image_response:
-                        image_response.raise_for_status()
-                        image_content = io.BytesIO(await image_response.read())
-            else: # pixart-alpha
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(url, headers=headers, json=data) as response:
-                        response.raise_for_status()
-                        response_text = await response.text()
-
-                        try:
-                            image_url = json.loads(response_text)["image_url"]
-                        except json.JSONDecodeError:
-                            image_url = response_text.strip()
+                    else:
+                        image_url = data.get("image_url")
+                        if not image_url:
+                            image_url = (await response.text()).strip()
 
                         image_url = image_url.split(".png", 1)[0] + ".png"
 
+
                     async with session.get(image_url) as image_response:
                         image_response.raise_for_status()
                         image_content = io.BytesIO(await image_response.read())
-
             await message.delete()
             await self.client.send_file(
                 message.chat_id,
@@ -170,6 +162,15 @@ class KsenonGPTMod(loader.Module):
             return
 
         await self.generate_image(message, args, "sdxl")
+
+    @loader.command()
+    async def fastflux(self, message):
+        """🧪 Сгенерировать фото, модель fastflux. .fastflux <prompt>"""
+        args = utils.get_args_raw(message)
+        if not args:
+            await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Пожалуйста, укажите запрос для генерации изображения. </b>")
+            return
+        await self.generate_image(message, args, "fastflux")
 
 
     @loader.command()
