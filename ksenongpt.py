@@ -11,10 +11,10 @@ from bs4 import BeautifulSoup
 
 # meta developer: Ksenon | @MeKsenon
 
-version = (1, 3, 1)
+version = (1, 3, 1,2)
 __version__ = version
 
-# changelog: ОБЯЗАТЕЛЬНО! ДОБАВЛЕНА МОДЕЛЬ FASTFLUX. Сейчас не работают flux & sd3 & gpt.
+# changelog: ОБЯЗАТЕЛЬНО: Тестовый фикс моделей Flux & SD3.
 
 def generate_text_with_gpt(prompt, model="gpt"):
     url = f"http://theksenon.pro/api/{model}/generate"
@@ -108,18 +108,13 @@ class KsenonGPTMod(loader.Module):
             async with aiohttp.ClientSession() as session:
                 async with session.post(url, headers=headers, json=data) as response:
                     response.raise_for_status()
-                    data = await response.json()
-                    if model in ("flux-pro", "sdxl", "fastflux"):
+                    data = await response.text()
+                    try:
+                        data = json.loads(data)
                         image_url = data.get("image_url")
-
-                    else:
-                        image_url = data.get("image_url")
-                        if not image_url:
-                            image_url = (await response.text()).strip()
-
-                        image_url = image_url.split(".png", 1)[0] + ".png"
-
-
+                    except json.JSONDecodeError:
+                        image_url = data.strip()
+                        
                     async with session.get(image_url) as image_response:
                         image_response.raise_for_status()
                         image_content = io.BytesIO(await image_response.read())
