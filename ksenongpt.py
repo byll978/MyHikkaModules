@@ -11,10 +11,10 @@ from bs4 import BeautifulSoup
 
 # meta developer: Ksenon | @MeKsenon
 
-version = (1, 3, 1,2)
+version = (1, 3, 2)
 __version__ = version
 
-# changelog: ОБЯЗАТЕЛЬНО: Тестовый фикс моделей Flux & SD3.
+# changelog: Полностью пофикшенный Flux. То что хотели потом.
 
 def generate_text_with_gpt(prompt, model="gpt"):
     url = f"http://theksenon.pro/api/{model}/generate"
