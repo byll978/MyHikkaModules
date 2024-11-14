@@ -9,36 +9,32 @@ import requests
 import json
 from bs4 import BeautifulSoup
 
-# meta developer: Ksenon | @MeKsenon
-
-version = (1, 3, 2)
+version = (1, 3, 6)
 __version__ = version
 
-# changelog: Полностью пофикшенный Flux. То что хотели потом.
-
-def generate_text_with_gpt(prompt, model="gpt"):
-    url = f"http://theksenon.pro/api/{model}/generate"
+def generate_text_with_gpt(prompt, model="gpt-3-web"):
+    url = "http://theksenon.pro/v1/chat/generate"
     headers = {"Content-Type": "application/json"}
-    data = {"prompt": prompt}
+    data = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": "You are a friendly userbot"},
+            {"role": "user", "content": prompt}
+        ]
+    }
 
     try:
         response = requests.post(url, headers=headers, json=data)
         response.raise_for_status()
         result = response.json()
-        return result.get("response")
+        return result["choices"][0]["message"]["content"]
     except requests.exceptions.RequestException as e:
         print(f"Error: {e}")
         return None
 
 def generate_phi_text(prompt):
-    url = "http://theksenon.pro/api/phi/generate"
-    headers = {"Content-Type": "application/json"}
-    data = {"prompt": prompt}
-    response = requests.post(url, headers=headers, json=data)
-    if response.status_code == 200:
-        return response.json()["response"]
-    else:
-        return "Ошибка при генерации текста"
+    return generate_text_with_gpt(prompt, model="phi-3.5-mini")
+
 
 @loader.tds
 class KsenonGPTMod(loader.Module):
@@ -87,8 +83,8 @@ class KsenonGPTMod(loader.Module):
             display_model = "flux-pro-mv"
         elif model == "sdxl":
             display_model = "stable-diffusion-3.5-large"
-        elif model == "fastflux":
-            display_model = "fastflux(test)"
+        elif model == "pixart-alpha":
+            display_model = "pixart-alpha"
 
         await utils.answer(message, f'<emoji document_id=5431456208487716895>🎨</emoji> <b>Генерирую изображение по запросу </b><code>"{args}"</code>...\n<emoji document_id=5334544901428229844>ℹ️</emoji> <b>Модель:</b> <i>{display_model}</i>\n{hint}')
 
@@ -96,9 +92,7 @@ class KsenonGPTMod(loader.Module):
             url = "http://theksenon.pro/api/flux/generate"
         elif model == "sdxl":
             url = "http://theksenon.pro/api/sdxl/generate"
-        elif model == "fastflux":
-            url = "http://theksenon.pro/api/fastflux/generate"
-        else:  # pixart-alpha
+        else:
             url = f"http://api.theksenon.pro/api/{model.split('-')[0]}/generate"
 
         headers = {"Content-Type": "application/json"}
@@ -114,7 +108,7 @@ class KsenonGPTMod(loader.Module):
                         image_url = data.get("image_url")
                     except json.JSONDecodeError:
                         image_url = data.strip()
-                        
+
                     async with session.get(image_url) as image_response:
                         image_response.raise_for_status()
                         image_content = io.BytesIO(await image_response.read())
@@ -158,15 +152,6 @@ class KsenonGPTMod(loader.Module):
 
         await self.generate_image(message, args, "sdxl")
 
-    @loader.command()
-    async def fastflux(self, message):
-        """🧪 Сгенерировать фото, модель fastflux. .fastflux <prompt>"""
-        args = utils.get_args_raw(message)
-        if not args:
-            await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Пожалуйста, укажите запрос для генерации изображения. </b>")
-            return
-        await self.generate_image(message, args, "fastflux")
-
 
     @loader.command()
     async def pixart(self, message):
@@ -189,7 +174,7 @@ class KsenonGPTMod(loader.Module):
         await utils.answer(message, '<emoji document_id=5443038326535759644>💬</emoji> <b>Генерирую ответ на ваш запрос...</b>')
 
         try:
-            response = generate_text_with_gpt(args, "gpt")
+            response = generate_text_with_gpt(args, "gpt-3-web")
             if response:
                 await utils.answer(message, f'<emoji document_id=5443038326535759644>💬</emoji> <b>Запрос:</b> <code>{args}</code>\n\n<emoji document_id=5372981976804366741>🤖</emoji> <b>{response}</b>')
             else:
@@ -200,7 +185,7 @@ class KsenonGPTMod(loader.Module):
 
     @loader.command()
     async def gpt4(self, message):
-        """🤖 Умная модель GPT-4, использовать .gpt4 <запрос>"""
+        """⚙️ Модель GPT-4, использовать .gpt4 <запрос>"""
         args = utils.get_args_raw(message)
         if not args:
             await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Укажите запрос для GPT-4.</b>")
@@ -209,7 +194,7 @@ class KsenonGPTMod(loader.Module):
         await utils.answer(message, '<emoji document_id=5443038326535759644>💬</emoji> <b>Генерирую ответ на ваш запрос...</b>')
 
         try:
-            response = generate_text_with_gpt(args, "groq")
+            response = generate_text_with_gpt(args, "gpt-4")
             if response:
                 await utils.answer(message, f'<emoji document_id=5443038326535759644>💬</emoji> <b>Запрос:</b> <code>{args}</code>\n\n<emoji document_id=5372981976804366741>🤖</emoji> <b>{response}</b>')
             else:
@@ -219,8 +204,48 @@ class KsenonGPTMod(loader.Module):
 
 
     @loader.command()
+    async def gpt4o(self, message):
+        """🤖 Очень умная модель GPT-4o, использовать .gpt4o <запрос>"""
+        args = utils.get_args_raw(message)
+        if not args:
+            await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Укажите запрос для GPT-4o.</b>")
+            return
+
+        await utils.answer(message, '<emoji document_id=5443038326535759644>💬</emoji> <b>Генерирую ответ на ваш запрос...</b>')
+
+        try:
+            response = generate_text_with_gpt(args, "gpt-4o")
+            if response:
+                await utils.answer(message, f'<emoji document_id=5443038326535759644>💬</emoji> <b>Запрос:</b> <code>{args}</code>\n\n<emoji document_id=5372981976804366741>🤖</emoji> <b>{response}</b>')
+            else:
+                await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Ошибка при получении ответа от GPT-4o.</b>")
+        except Exception as e:
+            await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Неизвестная ошибка: {str(e)}</b>")
+
+
+    @loader.command()
+    async def gpt4om(self, message):
+        """🔥 Умная модель GPT-4o-mini, использовать .gpt4om <запрос>"""
+        args = utils.get_args_raw(message)
+        if not args:
+            await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Укажите запрос для GPT-4o-mini.</b>")
+            return
+
+        await utils.answer(message, '<emoji document_id=5443038326535759644>💬</emoji> <b>Генерирую ответ на ваш запрос...</b>')
+
+        try:
+            response = generate_text_with_gpt(args, "gpt-4o-mini")
+            if response:
+                await utils.answer(message, f'<emoji document_id=5443038326535759644>💬</emoji> <b>Запрос:</b> <code>{args}</code>\n\n<emoji document_id=5372981976804366741>🤖</emoji> <b>{response}</b>')
+            else:
+                await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Ошибка при получении ответа от GPT-4o-mini.</b>")
+        except Exception as e:
+            await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Неизвестная ошибка: {str(e)}</b>")
+
+
+    @loader.command()
     async def kupdate(self, message):
-        """- Проверить обновления модуля."""
+        """ 🔎 Проверить обновления модуля."""
         module_name = "KsenonGPT"
         module = self.lookup(module_name)
         sys_module = inspect.getmodule(module)
@@ -335,3 +360,15 @@ class KsenonGPTMod(loader.Module):
                 await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b> Ошибка при получении ответа от Phi.</b>")
         except Exception as e:
             await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Неизвестная ошибка: {str(e)}</b>")
+
+    @loader.command()
+    async def news(self, message):
+        """📰 Получить новости модулей."""
+        url = "https://github.com/TheKsenon/MyHikkaModules/raw/refs/heads/main/news.txt"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                if response.status == 200:
+                    news_text = await response.text()
+                    await utils.answer(message, f"<emoji document_id=5433982607035474385>📰</emoji> <b>Новости модуля:</b>\n\n<i><b>{news_text}</i></b>")
+                else:
+                    await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji><b> Не удалось получить новости. Попробуйте позже. ({response.status})</b>")
