@@ -12,6 +12,8 @@ from bs4 import BeautifulSoup
 version = (1, 3, 6)
 __version__ = version
 
+# changelog: Большое обновление! Фиксы Flux, SD3, новости, gpt-4o & gpt-4o-mini. Обязательно обновитесь.
+
 def generate_text_with_gpt(prompt, model="gpt-3-web"):
     url = "http://theksenon.pro/v1/chat/generate"
     headers = {"Content-Type": "application/json"}
