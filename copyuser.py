@@ -33,7 +33,7 @@ class CopyUserModule(loader.Module):
     @loader.command()
     async def copyuser(self, message):
         """Copy user.
-         Use: .copy <username>"""
+         Use: .copyuser <username>"""
         args = utils.get_args_raw(message)
         if not args:
             await utils.answer(message, "<emoji document_id=5832251986635920010>➡️</emoji><b>Provide username after command!</b>")
