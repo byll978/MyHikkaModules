@@ -20,6 +20,8 @@ from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.errors import UsernameNotOccupiedError, UsernameInvalidError, ImageProcessFailedError
 import io
 
+__version__ = (1, 0, 0)
+
 @loader.tds
 class CopyUserModule(loader.Module):
     """Module that copying another user."""
