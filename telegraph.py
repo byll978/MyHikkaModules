@@ -1,10 +1,10 @@
 # ------------------------------------------------------------
 # Module: Telegraph
-# Description: Module for creating articles on telegra.ph,
-# Author: @kmodules
+# Description: Module for creating articles on telegra.ph
+# Author: kmodules
 # ------------------------------------------------------------
 # Licensed under the GNU AGPLv3
-# https://www.gnu.org/licenses/agpl-3.0.html
+# https:/www.gnu.org/licenses/agpl-3.0.html
 # ------------------------------------------------------------
 # Author: @MeKsenon
 # Commands:
@@ -15,8 +15,9 @@
 from .. import loader, utils
 import requests
 import json
+from telethon.tl.functions.channels import JoinChannelRequest
 
-__version__ = (1, 0, 0)
+__version__ = (1, 0, 1)
 
 @loader.tds
 class TelegraphMod(loader.Module):
@@ -24,19 +25,24 @@ class TelegraphMod(loader.Module):
     
     strings = {"name": "Telegraph"}
     
+    async def client_ready(self, client, db):
+        self.client = client
+        await self.client(JoinChannelRequest("kmodules"))
+    
     async def telegraphcmd(self, message):
         """Create article. Use:
-        	.telegraph <title> <description>"""
+         .telegraph <title> | <description>"""
         
         args = utils.get_args_raw(message)
-        if not args or len(args.split(' ', 1)) < 2:
-            return await message.edit("Use: telegraph <title> <description>")
+        if not args or '|' not in args:
+            return await message.edit("Use: .telegraph <title> | <description>")
             
-        title, description = args.split(' ', 1)
+        title, description = args.split('|', 1)
+        title = title.strip()
+        description = description.strip()
         
         await message.edit("<emoji document_id=5325792861885570739>🫥</emoji> <b>Making article...</b>")
         
-
         user = await message.client.get_me()
         author = user.first_name
         
@@ -75,4 +81,3 @@ class TelegraphMod(loader.Module):
             f"<emoji document_id=5217890643321300022>✈️</emoji> <a href='{url}'><b>Article</b></a>\n"
             f"<emoji document_id=5219943216781995020>⚡</emoji> <b>URL</b>: {url}"
         )
-      
