@@ -7,7 +7,7 @@
 # https:/www.gnu.org/licenses/agpl-3.0.html
 # ------------------------------------------------------------
 # Author: @MeKsenon
-# Commands: .copyuser .restoreme .backupme
+# Commands:
 # scope: hikka_only
 # meta developer: @kmodules
 # ------------------------------------------------------------
@@ -16,125 +16,140 @@ from .. import loader, utils
 from telethon.tl.functions.users import GetFullUserRequest
 from telethon.tl.functions.account import UpdateProfileRequest
 from telethon.tl.functions.photos import UploadProfilePhotoRequest, DeletePhotosRequest
-from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.errors import UsernameNotOccupiedError, UsernameInvalidError, ImageProcessFailedError
 import io
+import requests
+from telethon.tl.functions.channels import JoinChannelRequest
 
-__version__ = (1, 0, 2)
+__version__ = (1, 0, 5)
 
 @loader.tds
-class UserProfileModule(loader.Module):
-    """Модуль чтобы копировать других пользователей."""
-
+class ProfileToolsModule(loader.Module):
     strings = {"name": "CopyUser"}
-    
+
     def __init__(self):
-        self.config = loader.ModuleConfig(
-            "backup_data", {},
-            lambda: "Stored backup data"
-        )
+        self.name = self.strings["name"]
+        self._backup_data = None
 
     async def client_ready(self, client, db):
         self.client = client
+        self.db = db
         await self.client(JoinChannelRequest("kmodules"))
+
+    async def upload_to_0x0(self, photo_bytes):
+        try:
+            files = {'file': ('photo.png', photo_bytes)}
+            response = requests.post(
+                'https://0x0.st',
+                files=files,
+                data={'secret': True}
+            )
+            return response.text.strip()
+        except Exception as e:
+            return f"Ошибка: {str(e)}"
 
     @loader.command()
     async def copyuser(self, message):
-        """Копировать профиль пользователя.
-        Use: .copyuser <username>"""
+        """Скопировать профиль пользователя"""
         args = utils.get_args_raw(message)
         if not args:
-            await utils.answer(message, "<emoji document_id=5832251986635920010>➡️</emoji><b>Provide username after command!</b>")
+            await utils.answer(message, "<emoji document_id=5832251986635920010>➡️</emoji><b>Укажите юзернейм после команды!</b>")
             return
 
         try:
             user = await message.client.get_entity(args)
             full_user = await message.client(GetFullUserRequest(user.id))
             
-            try:
-                photos = await message.client.get_profile_photos('me')
-                if photos:
-                    await message.client(DeletePhotosRequest(photos))
-                
-                photo = await message.client.download_profile_photo(user)
-                if photo:
-                    await message.client(UploadProfilePhotoRequest(
-                        await message.client.upload_file(photo)
-                    ))
-            except Exception as e:
-                await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji> <b>Error with avatar: {str(e)}</b>")
-           
+            if full_user.full_user.profile_photo:
+                try:
+                    avatar = await message.client.download_profile_photo(user, bytes)
+                    if avatar:
+                        photos = await message.client.get_profile_photos('me')
+                        await message.client(DeletePhotosRequest(photos))
+                        
+                        await message.client(UploadProfilePhotoRequest(
+                            file=await message.client.upload_file(io.BytesIO(avatar))
+                        ))
+                        await utils.answer(message, "<emoji document_id=5879770735999717115>👤</emoji><b>Аватар изменен.</b>")
+                    else:
+                        await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji> <b>Ошибка при изменении аватара.</b>")
+                except ImageProcessFailedError:
+                    await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji> <b>Ошибка при обработке аватара.</b>")
+            else:
+                await utils.answer(message, "<emoji document_id=5240241223632954241>🚫</emoji> <b>У пользователя нет аватара!</b>")
+            
             await message.client(UpdateProfileRequest(
                 first_name=user.first_name or "",
                 last_name=user.last_name or "",
                 about=full_user.full_user.about or ""
             ))
             
-            await utils.answer(message, "<emoji document_id=5397916757333654639>➕</emoji> <b>Профиль успешно скопирован!</b>")
+            await utils.answer(message, "<emoji document_id=5397916757333654639>➕</emoji> <b>Профиль пользователя скопирован!</b>")
         except UsernameNotOccupiedError:
-            await utils.answer(message, "<emoji document_id=5240241223632954241>🚫</emoji> <b>Юзера с таким юзернеймом не найдено!</b>")
+            await utils.answer(message, "<emoji document_id=5240241223632954241>🚫</emoji> <b>Пользователь с таким юзернеймом не найден!</b>")
         except UsernameInvalidError:
-            await utils.answer(message, "<emoji document_id=5240241223632954241>🚫</emoji> <b>Неправильный формат юзернейма.</b>")
+            await utils.answer(message, "<emoji document_id=5240241223632954241>🚫</emoji> <b>Неверный формат юзернейма.</b>")
         except Exception as e:
             await utils.answer(message, f"😵 Ошибка: {str(e)}")
 
     @loader.command()
     async def backupme(self, message):
-        """Создать бэкап данного профиля"""
+        """Сделать резервную копию профиля"""
         try:
-            me = await self.client.get_me()
-            full_user = await self.client(GetFullUserRequest(me.id))
+            user = await self.client.get_me()
+            full_user = await self.client(GetFullUserRequest(user.id))
             
+            avatar_url = None
+            photos = await self.client.get_profile_photos('me')
+            if photos:
+                avatar_bytes = await self.client.download_profile_photo('me', bytes)
+                avatar_url = await self.upload_to_0x0(avatar_bytes)
+
             backup_data = {
-                "first_name": me.first_name or "",
-                "last_name": me.last_name or "", 
-                "about": full_user.full_user.about or "",
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "about": full_user.full_user.about,
+                "avatar_url": avatar_url
             }
             
-            try:
-                photo = await self.client.download_profile_photo('me')
-                if photo:
-                    with open(photo, 'rb') as f:
-                        backup_data["avatar"] = f.read().hex()
-            except Exception:
-                backup_data["avatar"] = None
-
-            self.config["backup_data"] = backup_data
+            self.db.set("BackupProfile", "backup_data", backup_data)
             
             await utils.answer(
                 message,
-                "<emoji document_id=5294096239464295059>🔵</emoji> <b>Ваш данный профиль сохранен. Вы можете вернуть его используя</b> <code>restoreme</code>"
+                f"<emoji document_id=5294096239464295059>🔵</emoji> <b>Ваш данный профиль сохранен. Вы можете вернуть его используя</b> <code>restoreme</code>\n\n<b>⚙️ URL данной Аватарки: {avatar_url}</b>"
             )
 
         except Exception as e:
             await utils.answer(message, f"😵 Ошибка: {str(e)}")
 
-    @loader.command() 
+    @loader.command()
     async def restoreme(self, message):
-        """Восстановить старый профиль"""
+        """Восстановить профиль из резервной копии"""
         try:
-            backup = self.config["backup_data"]
-            if not backup:
-                await utils.answer(message, "❌ <b>Нет сохраненных данных!</b>")
+            backup_data = self.db.get("BackupProfile", "backup_data")
+            
+            if not backup_data:
+                await utils.answer(message, "❌ <b>Резервная копия не найдена!</b>")
                 return
 
-            if backup.get("avatar"):
+            if backup_data.get("avatar_url"):
                 try:
                     photos = await self.client.get_profile_photos('me')
-                    if photos:
-                        await self.client(DeletePhotosRequest(photos))
+                    await self.client(DeletePhotosRequest(photos))
                     
-                    avatar_bytes = bytes.fromhex(backup["avatar"])
+                    response = requests.get(backup_data["avatar_url"])
+                    avatar_bytes = io.BytesIO(response.content)
+                    
                     await self.client(UploadProfilePhotoRequest(
-                        await self.client.upload_file(io.BytesIO(avatar_bytes))
+                        file=await self.client.upload_file(avatar_bytes)
                     ))
-                except Exception as e:
-                    await utils.answer(message, f"<emoji document_id=5210952531676504517>❌</emoji> <b>Ошибка при установлении аватарки: {str(e)}</b>")
+                except ImageProcessFailedError:
+                    await utils.answer(message, "❌ <b>Не удалось восстановить аватар</b>")
 
             await self.client(UpdateProfileRequest(
-                first_name=backup["first_name"],
-                last_name=backup["last_name"],
-                about=backup["about"]
+                first_name=backup_data.get("first_name", ""),
+                last_name=backup_data.get("last_name", "") or "",
+                about=backup_data.get("about", "")
             ))
 
             await utils.answer(
