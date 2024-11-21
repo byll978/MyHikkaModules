@@ -23,10 +23,10 @@ import requests
 import os
 from telethon.tl.functions.channels import JoinChannelRequest
 
-__version__ = (1, 0, 6)
+version = (1, 0, 5)
 
 @loader.tds
-class CopyUserModule(loader.Module):
+class ProfileToolsModule(loader.Module):
     strings = {"name": "CopyUser"}
 
     def init(self):
@@ -74,6 +74,7 @@ class CopyUserModule(loader.Module):
 
             full = await message.client(GetFullUserRequest(user.id))
             user_info = full.users[0]
+            me = await message.client.get_me()
             
             if full.full_user.profile_photo:
                 try:
@@ -88,13 +89,8 @@ class CopyUserModule(loader.Module):
                             file=await message.client.upload_file(photo)
                         ))
                         os.remove(photo)
-                        await utils.answer(message, "<emoji document_id=5879770735999717115>👤</emoji><b>Аватар изменен.</b>")
-                    else:
-                        await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji> <b>Ошибка при изменении аватара.</b>")
-                except ImageProcessFailedError:
-                    await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji> <b>Ошибка при обработке аватара.</b>")
-            else:
-                await utils.answer(message, "<emoji document_id=5240241223632954241>🚫</emoji> <b>У пользователя нет аватара!</b>")
+                except:
+                    pass
             
             await message.client(UpdateProfileRequest(
                 first_name=user_info.first_name if user_info.first_name is not None else "",
@@ -102,12 +98,15 @@ class CopyUserModule(loader.Module):
                 about=full.full_user.about[:70] if full.full_user.about is not None else "",
             ))
 
-            if hasattr(user_info, 'emoji_status') and user_info.emoji_status:
-                await message.client(
-                    UpdateEmojiStatusRequest(
-                        emoji_status=user_info.emoji_status
+            if hasattr(user_info, 'emoji_status') and user_info.emoji_status and me.premium:
+                try:
+                    await message.client(
+                        UpdateEmojiStatusRequest(
+                            emoji_status=user_info.emoji_status
+                        )
                     )
-                )
+                except:
+                    pass
             
             await utils.answer(message, "<emoji document_id=5397916757333654639>➕</emoji> <b>Профиль пользователя скопирован!</b>")
         except UsernameNotOccupiedError:
@@ -158,6 +157,7 @@ class CopyUserModule(loader.Module):
         """Восстановить профиль из резервной копии"""
         try:
             backup_data = self.db.get("BackupProfile", "backup_data")
+            me = await message.client.get_me()
             
             if not backup_data:
                 await utils.answer(message, "❌ <b>Резервная копия не найдена!</b>")
@@ -174,8 +174,8 @@ class CopyUserModule(loader.Module):
                     await self.client(UploadProfilePhotoRequest(
                         file=await self.client.upload_file(avatar_bytes)
                     ))
-                except ImageProcessFailedError:
-                    await utils.answer(message, "❌ <b>Не удалось восстановить аватар</b>")
+                except:
+                    pass
 
             await self.client(UpdateProfileRequest(
                 first_name=backup_data.get("first_name", ""),
@@ -183,14 +183,17 @@ class CopyUserModule(loader.Module):
                 about=backup_data.get("about", "")
             ))
 
-            if backup_data.get("emoji_status_id"):
-                await self.client(
-                    UpdateEmojiStatusRequest(
-                        emoji_status=types.EmojiStatus(
-                            document_id=backup_data["emoji_status_id"]
+            if backup_data.get("emoji_status_id") and me.premium:
+                try:
+                    await self.client(
+                        UpdateEmojiStatusRequest(
+                            emoji_status=types.EmojiStatus(
+                                document_id=backup_data["emoji_status_id"]
+                            )
                         )
                     )
-                )
+                except:
+                    pass
 
             await utils.answer(
                 message,
