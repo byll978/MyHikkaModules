@@ -14,20 +14,22 @@
 
 from .. import loader, utils
 from telethon.tl.functions.users import GetFullUserRequest
-from telethon.tl.functions.account import UpdateProfileRequest
+from telethon.tl.functions.account import UpdateProfileRequest, UpdateEmojiStatusRequest
 from telethon.tl.functions.photos import UploadProfilePhotoRequest, DeletePhotosRequest
 from telethon.errors import UsernameNotOccupiedError, UsernameInvalidError, ImageProcessFailedError
+from telethon import types, functions
 import io
 import requests
+import os
 from telethon.tl.functions.channels import JoinChannelRequest
 
-__version__ = (1, 0, 5)
+__version__ = (1, 0, 6)
 
 @loader.tds
-class ProfileToolsModule(loader.Module):
+class CopyUserModule(loader.Module):
     strings = {"name": "CopyUser"}
 
-    def __init__(self):
+    def init(self):
         self.name = self.strings["name"]
         self._backup_data = None
 
@@ -50,26 +52,42 @@ class ProfileToolsModule(loader.Module):
 
     @loader.command()
     async def copyuser(self, message):
-        """Скопировать профиль пользователя"""
+        """Скопировать профиль пользователя (работает по reply/@username/ID)"""
         args = utils.get_args_raw(message)
-        if not args:
-            await utils.answer(message, "<emoji document_id=5832251986635920010>➡️</emoji><b>Укажите юзернейм после команды!</b>")
-            return
-
+        reply = await message.get_reply_message()
+        
         try:
-            user = await message.client.get_entity(args)
-            full_user = await message.client(GetFullUserRequest(user.id))
-            
-            if full_user.full_user.profile_photo:
+            if args:
                 try:
-                    avatar = await message.client.download_profile_photo(user, bytes)
-                    if avatar:
-                        photos = await message.client.get_profile_photos('me')
-                        await message.client(DeletePhotosRequest(photos))
-                        
-                        await message.client(UploadProfilePhotoRequest(
-                            file=await message.client.upload_file(io.BytesIO(avatar))
+                    if args.isdigit():
+                        user = await message.client.get_entity(int(args))
+                    else:
+                        user = await message.client.get_entity(args)
+                except ValueError:
+                    await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b>Не удалось найти пользователя!</b>")
+                    return
+            elif reply:
+                user = await reply.get_sender()
+            else:
+                await utils.answer(message, "<emoji document_id=5832251986635920010>➡️</emoji><b>Укажите пользователя (reply/@username/ID)!</b>")
+                return
+
+            full = await message.client(GetFullUserRequest(user.id))
+            user_info = full.users[0]
+            
+            if full.full_user.profile_photo:
+                try:
+                    photos = await message.client.get_profile_photos(user.id)
+                    if photos:
+                        await message.client(DeletePhotosRequest(
+                            await message.client.get_profile_photos("me")
                         ))
+                        
+                        photo = await message.client.download_media(photos[0])
+                        await message.client(UploadProfilePhotoRequest(
+                            file=await message.client.upload_file(photo)
+                        ))
+                        os.remove(photo)
                         await utils.answer(message, "<emoji document_id=5879770735999717115>👤</emoji><b>Аватар изменен.</b>")
                     else:
                         await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji> <b>Ошибка при изменении аватара.</b>")
@@ -79,16 +97,23 @@ class ProfileToolsModule(loader.Module):
                 await utils.answer(message, "<emoji document_id=5240241223632954241>🚫</emoji> <b>У пользователя нет аватара!</b>")
             
             await message.client(UpdateProfileRequest(
-                first_name=user.first_name or "",
-                last_name=user.last_name or "",
-                about=full_user.full_user.about or ""
+                first_name=user_info.first_name if user_info.first_name is not None else "",
+                last_name=user_info.last_name if user_info.last_name is not None else "",
+                about=full.full_user.about[:70] if full.full_user.about is not None else "",
             ))
+
+            if hasattr(user_info, 'emoji_status') and user_info.emoji_status:
+                await message.client(
+                    UpdateEmojiStatusRequest(
+                        emoji_status=user_info.emoji_status
+                    )
+                )
             
             await utils.answer(message, "<emoji document_id=5397916757333654639>➕</emoji> <b>Профиль пользователя скопирован!</b>")
         except UsernameNotOccupiedError:
-            await utils.answer(message, "<emoji document_id=5240241223632954241>🚫</emoji> <b>Пользователь с таким юзернеймом не найден!</b>")
+            await utils.answer(message, "<emoji document_id=5240241223632954241>🚫</emoji> <b>Пользователь не найден!</b>")
         except UsernameInvalidError:
-            await utils.answer(message, "<emoji document_id=5240241223632954241>🚫</emoji> <b>Неверный формат юзернейма.</b>")
+            await utils.answer(message, "<emoji document_id=5240241223632954241>🚫</emoji> <b>Неверный формат юзернейма/ID.</b>")
         except Exception as e:
             await utils.answer(message, f"😵 Ошибка: {str(e)}")
 
@@ -97,19 +122,25 @@ class ProfileToolsModule(loader.Module):
         """Сделать резервную копию профиля"""
         try:
             user = await self.client.get_me()
-            full_user = await self.client(GetFullUserRequest(user.id))
+            full = await self.client(GetFullUserRequest(user.id))
+            user_info = full.users[0]
             
             avatar_url = None
-            photos = await self.client.get_profile_photos('me')
+            photos = await self.client.get_profile_photos(user.id)
             if photos:
-                avatar_bytes = await self.client.download_profile_photo('me', bytes)
-                avatar_url = await self.upload_to_0x0(avatar_bytes)
+                photo = await self.client.download_media(photos[0], bytes)
+                avatar_url = await self.upload_to_0x0(photo)
+
+            emoji_status_id = None
+            if hasattr(user_info, 'emoji_status') and user_info.emoji_status:
+                emoji_status_id = user_info.emoji_status.document_id
 
             backup_data = {
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-                "about": full_user.full_user.about,
-                "avatar_url": avatar_url
+                "first_name": user_info.first_name,
+                "last_name": user_info.last_name,
+                "about": full.full_user.about,
+                "avatar_url": avatar_url,
+                "emoji_status_id": emoji_status_id
             }
             
             self.db.set("BackupProfile", "backup_data", backup_data)
@@ -151,6 +182,15 @@ class ProfileToolsModule(loader.Module):
                 last_name=backup_data.get("last_name", "") or "",
                 about=backup_data.get("about", "")
             ))
+
+            if backup_data.get("emoji_status_id"):
+                await self.client(
+                    UpdateEmojiStatusRequest(
+                        emoji_status=types.EmojiStatus(
+                            document_id=backup_data["emoji_status_id"]
+                        )
+                    )
+                )
 
             await utils.answer(
                 message,
