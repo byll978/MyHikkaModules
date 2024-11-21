@@ -23,7 +23,7 @@ import requests
 import os
 from telethon.tl.functions.channels import JoinChannelRequest
 
-version = (1, 0, 5)
+version = (1, 0, 6)
 
 @loader.tds
 class ProfileToolsModule(loader.Module):
