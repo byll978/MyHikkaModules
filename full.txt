@@ -3,3 +3,4 @@ copyuser
 telegraph
 randommemes
 text2speech
+ytsearch
