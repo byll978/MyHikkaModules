@@ -31,7 +31,7 @@ class GitHubInfoMod(loader.Module):
 
     async def client_ready(self, client, db):
         self.client = client
-        await client(JoinChannelRequest("durov"))
+        await client(JoinChannelRequest("kmodules"))
 
     @loader.command()
     async def github(self, message):
