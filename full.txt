@@ -3,6 +3,7 @@ copyuser
 telegraph
 randommemes
 text2speech
+quizai
 audio2text
 ytsearch
 github
