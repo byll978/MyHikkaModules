@@ -1,3 +1,17 @@
+# ------------------------------------------------------------
+# Module: GitHubInfo
+# Description: Модуль информации о профиле GitHub.
+# Author: @kmodules
+# ------------------------------------------------------------
+# Licensed under the GNU AGPLv3
+# https:/www.gnu.org/licenses/agpl-3.0.html
+# ------------------------------------------------------------
+# Author: @MeKsenon
+# Commands:
+# scope: hikka_only
+# meta developer: @kmodules
+# ------------------------------------------------------------
+
 import requests
 from datetime import datetime
 from .. import loader, utils
