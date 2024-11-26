@@ -256,7 +256,7 @@ Return ONLY valid JSON, no other text. Default: Russian language. Generate on ru
                 json=data,
                 proxies=proxies,
                 verify=False,
-                timeout=60
+                timeout=80
             )
             response.raise_for_status()
             return response.json()["candidates"][0]["content"]["parts"][0]["text"]
