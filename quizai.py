@@ -9,7 +9,6 @@
 # Author: @MeKsenon
 # Commands: .quiz
 # scope: hikka_only
-# meta banner: https://i.ibb.co/VWYVC7c/1d011a5f-cb9c-4198-97fa-c4227b41c033.jpg
 # meta developer: @kmodules
 # ------------------------------------------------------------
 
@@ -21,6 +20,8 @@ from .. import loader, utils
 from telethon.tl.types import Message
 from telethon.tl.functions.channels import JoinChannelRequest
 
+__version__ = (1, 0, 1)
+
 @loader.tds
 class QuizGameMod(loader.Module):
     """Игра-викторина с разными темами и сложностями"""
@@ -29,14 +30,7 @@ class QuizGameMod(loader.Module):
 
     def __init__(self):
         self.config = loader.ModuleConfig(
-            "api_key",
-            "",
-            lambda: "Введите сюда свой API-Key",
-        )
-
-    def init(self):
-        self.config = loader.ModuleConfig(
-            "api_key",
+            "api_key", 
             "",
             lambda: "Возьмите свой API-Key отсюда: https://aistudio.google.com"
         )
@@ -53,8 +47,8 @@ class QuizGameMod(loader.Module):
     @loader.command()
     async def quiz(self, message: Message):
         """Начать викторину
-        Аргументы: -t "тема" -d <easy/normal/hard>
-        Пример: .quiz -t "Minecraft" -d easy"""
+        Аргументы: -t "тема" -d <easy/normal/hard/impossible> -m <stable/fast>
+        Пример: .quiz -t "Minecraft" -d easy -m stable"""
         
         if not self.config["api_key"]:
             await utils.answer(message, "❌ Установите API-Key!\nВозьмите свой API-Key отсюда: https://aistudio.google.com\nДалее введите: .fcfg QuizAI api_key КЛЮЧ")
@@ -65,18 +59,35 @@ class QuizGameMod(loader.Module):
         try:
             parts = args.split('" -')
             theme_part = parts[0].split('-t "')[1]
-            difficulty = parts[1].split('d ')[1].lower()
+            args_parts = parts[1].split()
+            difficulty = args_parts[1].lower()
+            mode = args_parts[3].lower() if len(args_parts) > 3 else "stable"
         except:
-            await utils.answer(message, '❌ Используйте: .quiz -t "тема" -d <сложность>\nПример: .quiz -t "Minecraft" -d easy')
+            await utils.answer(message, '❌ Используйте: .quiz -t "тема" -d <сложность> -m <stable/fast>\nПример: .quiz -t "Minecraft" -d easy -m stable')
             return
             
-        if difficulty not in ["easy", "normal", "hard","extreme"]:
-            await utils.answer(message, "❌ Сложность может быть: easy, normal или hard/extreme")
+        if difficulty not in ["easy", "normal", "hard", "extreme", "impossible"]:
+            await utils.answer(message, "❌ Сложность может быть: easy, normal, hard, extreme или impossible")
             return
-            
-        await utils.answer(message, """┏🔄 Генерирую нейро-викторину...
+
+        if mode not in ["stable", "fast"]:
+            await utils.answer(message, "❌ Режим может быть: stable или fast")
+            return
+
+        model = "gemini-1.5-pro-exp-0827" if mode == "stable" else "gemini-1.5-flash-exp-0827"
+        
+        if mode == "stable":
+            await utils.answer(message, """┏ 🔄 Генерирую нейро-викторину...
 ┃
-┗ 🔥 Модель: gemini-1.5-pro-0827, будет немного долго.""")
+┗ 🔥 Модель: gemini-1.5-pro-0827, будет немного долго.
+
+🕰️ Вам не хочется ждать? Поменяйте тэг -m на -m fast""")
+        else:
+            await utils.answer(message, """┏ 🔄 Генерирую нейро-викторину...
+┃
+┗ 🔥 Модель: gemini-1.5-flash-0827, будет быстро.
+
+🤖 Хотите стабильные ответы? Поменяйте тэг -m на -m stable""")
         
         system_prompt = f'''You are a quiz generator. Generate 10 very accurate and specific questions about {theme_part}.
 
@@ -108,8 +119,7 @@ Return exactly this JSON format:
 }}
 
 Return ONLY valid JSON, no other text. Default: Russian language. Generate on russian language, if no on this language...'''
-        
-        result = self.gemini_request(system_prompt)
+        result = self.gemini_request(system_prompt, model)
         if not result:
              await utils.answer(message, "😔 Ошибка при получении данных от API. Проверьте API-Key и повторите попытку.")
              return
@@ -228,9 +238,9 @@ Return ONLY valid JSON, no other text. Default: Russian language. Generate on ru
             reply_markup=buttons
         )
     
-    def gemini_request(self, prompt):
+    def gemini_request(self, prompt, model):
         GEMINI_API_KEY = self.config["api_key"]
-        BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-exp-0827:generateContent"
+        BASE_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
         
         headers = {"Content-Type": "application/json"}
         data = {
@@ -257,7 +267,7 @@ Return ONLY valid JSON, no other text. Default: Russian language. Generate on ru
                 json=data,
                 proxies=proxies,
                 verify=False,
-                timeout=80
+                timeout=60
             )
             response.raise_for_status()
             return response.json()["candidates"][0]["content"]["parts"][0]["text"]
@@ -267,3 +277,4 @@ Return ONLY valid JSON, no other text. Default: Russian language. Generate on ru
             return None
         except (KeyError, json.JSONDecodeError):
             return None
+
