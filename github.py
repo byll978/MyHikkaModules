@@ -7,7 +7,7 @@
 # https:/www.gnu.org/licenses/agpl-3.0.html
 # ------------------------------------------------------------
 # Author: @MeKsenon
-# Commands:
+# Commands: .github
 # scope: hikka_only
 # meta developer: @kmodules
 # ------------------------------------------------------------
