@@ -15,33 +15,43 @@
 from .. import loader, utils
 import requests
 import json
-from telethon.tl.functions.channels import JoinChannelRequest
 
-__version__ = (1, 0, 1)
+__version__ = (1, 0, 2)
 
 @loader.tds
 class TelegraphMod(loader.Module):
     """Create article using telegra.ph"""
     
-    strings = {"name": "Telegraph"}
+    strings = {
+        "name": "Telegraph",
+        "args_error": "Use: .telegraph <title> | <description>",
+        "making": "<emoji document_id=5325792861885570739>🫥</emoji> <b>Making article...</b>",
+        "acc_error": "<emoji document_id=5440381017825716886>❌</emoji> Error occurred while creating account.",
+        "page_error": "<emoji document_id=5440381017825716886>❌</emoji> Error occurred while creating article.", 
+        "success": "<emoji document_id=5463144094945516339>👍</emoji> <b>Article created!</b>\n\n<emoji document_id=5217890643321300022>✈️</emoji> <a href='{}'><b>Article</b></a>\n<emoji document_id=5219943216781995020>⚡</emoji> <b>URL</b>: {}"
+    }
     
-    async def client_ready(self, client, db):
-        self.client = client
-        await self.client(JoinChannelRequest("kmodules"))
+    strings_ru = {
+        "name": "Telegraph",
+        "args_error": "Использование: .telegraph <заголовок> | <описание>",
+        "making": "<emoji document_id=5325792861885570739>🫥</emoji> <b>Создаю статью...</b>",
+        "acc_error": "<emoji document_id=5440381017825716886>❌</emoji> Произошла ошибка при создании аккаунта.",
+        "page_error": "<emoji document_id=5440381017825716886>❌</emoji> Произошла ошибка при создании статьи.",
+        "success": "<emoji document_id=5463144094945516339>👍</emoji> <b>Статья создана!</b>\n\n<emoji document_id=5217890643321300022>✈️</emoji> <a href='{}'><b>Статья</b></a>\n<emoji document_id=5219943216781995020>⚡</emoji> <b>URL</b>: {}"
+    }
     
     async def telegraphcmd(self, message):
-        """Create article. Use:
-         .telegraph <title> | <description>"""
+        """Create article. Use: .telegraph <title> | <description>"""
         
         args = utils.get_args_raw(message)
         if not args or '|' not in args:
-            return await message.edit("Use: .telegraph <title> | <description>")
+            return await message.edit(self.strings["args_error"])
             
         title, description = args.split('|', 1)
         title = title.strip()
         description = description.strip()
         
-        await message.edit("<emoji document_id=5325792861885570739>🫥</emoji> <b>Making article...</b>")
+        await message.edit(self.strings["making"])
         
         user = await message.client.get_me()
         author = user.first_name
@@ -55,7 +65,7 @@ class TelegraphMod(loader.Module):
         ).json()
         
         if not acc_data["ok"]:
-            return await message.edit("❌ Error occured while creating account.")
+            return await message.edit(self.strings["acc_error"])
             
         token = acc_data["result"]["access_token"]
         
@@ -72,12 +82,10 @@ class TelegraphMod(loader.Module):
         result = response.json()
         
         if not result["ok"]:
-            return await message.edit("❌ Error occured while creating article.")
+            return await message.edit(self.strings["page_error"])
             
         url = result["result"]["url"]
         
         await message.edit(
-            f"<emoji document_id=5463144094945516339>👍</emoji> <b>Article created!</b>\n\n"
-            f"<emoji document_id=5217890643321300022>✈️</emoji> <a href='{url}'><b>Article</b></a>\n"
-            f"<emoji document_id=5219943216781995020>⚡</emoji> <b>URL</b>: {url}"
+            self.strings["success"].format(url, url)
         )
