@@ -1,6 +1,6 @@
 # ------------------------------------------------------------
 # Module: GitHubInfo
-# Description: Модуль информации о профиле GitHub.
+# Description: Module for GitHub profile information.
 # Author: @kmodules
 # ------------------------------------------------------------
 # Licensed under the GNU AGPLv3
@@ -15,27 +15,39 @@
 import requests
 from datetime import datetime
 from .. import loader, utils
-from telethon.tl.functions.channels import JoinChannelRequest
+
+__version__ = (1, 0, 1)
 
 @loader.tds
 class GitHubInfoMod(loader.Module):
-    """Модуль информации о профиле GitHub."""
+    """Module for viewing GitHub profile information"""
 
     strings = {
         "name": "GitHubInfo",
+        "no_username": "<emoji document_id=5420323339723881652>⚠️</emoji> <b>Please specify a username!</b>",
+        "user_not_found": "<emoji document_id=5210952531676504517>❌</emoji> <b>User not found</b>",
+        "error": "<emoji document_id=5420323339723881652>⚠️</emoji> <b>Error getting data</b>: <i>{}</i>",
+        "loading": "<emoji document_id=5328239124933515868>⚙️</emoji> <b>Loading information...</b>",
+        "repos": "repositories",
+        "no_data": "No data"
+    }
+
+    strings_ru = {
+        "name": "GitHubInfo",
         "no_username": "<emoji document_id=5420323339723881652>⚠️</emoji> <b>Укажите имя пользователя!</b>",
-        "user_not_found": "<emoji document_id=5210952531676504517>❌</emoji> <b>Пользователь не найден</b>", 
+        "user_not_found": "<emoji document_id=5210952531676504517>❌</emoji> <b>Пользователь не найден</b>",
         "error": "<emoji document_id=5420323339723881652>⚠️</emoji> <b>Ошибка при получении данных</b>: <i>{}</i>",
-        "loading": "<emoji document_id=5328239124933515868>⚙️</emoji> <b>Загружаю информацию...</b>"
+        "loading": "<emoji document_id=5328239124933515868>⚙️</emoji> <b>Загружаю информацию...</b>",
+        "repos": "репозиториев",
+        "no_data": "Нет данных"
     }
 
     async def client_ready(self, client, db):
         self.client = client
-        await client(JoinChannelRequest("kmodules"))
 
-    @loader.command()
+    @loader.command(ru_doc="<username> - получить информацию о профиле GitHub",
+                   en_doc="<username> - get GitHub profile information")
     async def github(self, message):
-        """<username> - получить информацию о профиле GitHub"""
         args = utils.get_args_raw(message)
         if not args:
             await utils.answer(message, self.strings["no_username"])
@@ -49,7 +61,7 @@ class GitHubInfoMod(loader.Module):
                 await utils.answer(message, self.strings["user_not_found"])
                 return
             if r.status_code != 200:
-                await utils.answer(message, self.strings["error"].format("Некорректный ответ API")) 
+                await utils.answer(message, self.strings["error"].format("Invalid API response"))
                 return
 
             user = r.json()
@@ -67,43 +79,34 @@ class GitHubInfoMod(loader.Module):
                 langs_parts = []
                 for i, lang in enumerate(top_langs):
                     prefix = " ┣ " if i < len(top_langs)-1 else " ┗ "
-                    langs_parts.append(f"{prefix}<b>{lang[0]}:</b> <i>{lang[1]} репозиториев</i>")
+                    langs_parts.append(f"{prefix}<b>{lang[0]}:</b> <i>{lang[1]} {self.strings['repos']}</i>")
                 langs_text = "\n".join(langs_parts)
             elif len(top_langs) == 1:
-                langs_text = f" ┗ <b>{top_langs[0][0]}:</b> <i>{top_langs[0][1]} репозиториев</i>"
+                langs_text = f" ┗ <b>{top_langs[0][0]}:</b> <i>{top_langs[0][1]} {self.strings['repos']}</i>"
             else:
-                langs_text = " ┗ Нет данных"
+                langs_text = f" ┗ {self.strings['no_data']}"
             
             created = datetime.strptime(user['created_at'], "%Y-%m-%dT%H:%M:%SZ")
             created_date = created.strftime("%d.%m.%Y")
             
             text = (
-                f"<emoji document_id=5296237851891998039>😸</emoji> <b>Github профиль:</b>\n\n"
-                f"<emoji document_id=5879770735999717115>👤</emoji> <b>Основная информация:</b>\n"
-                f" ┣ <b>Имя в Github:</b> <a href='https://github.com/{user['login']}'>{user['login']}</a>\n"
-                f" ┣ <b>Компания:</b> {user['company'] or '❌'}\n"
-                f" ┣ <b>Аккаунт создан:</b> {created_date}\n"
-                f" ┣ <b>Сайт:</b> {user['blog'] or '❌'}\n"
-                f" ┗ <b>EMail:</b> {user['email'] or '❌'}\n\n"
-                f"<emoji document_id=5231200819986047254>📊</emoji> <b>Статистика:</b>\n"
-                f" ┣ <b>Репозитории:</b> {user['public_repos']}\n"
-                f" ┣ <b>Gists:</b> {user['public_gists']}\n"
-                f" ┣ <b>Подписчики:</b> {user['followers']}\n"
-                f" ┗ <b>Подписки:</b> {user['following']}\n\n"
-                f"<emoji document_id=5447410659077661506>🌐</emoji> <b>Топ репозиториев по ЯП:</b>\n"
-                f"{langs_text}\n\n"
-                f"<emoji document_id=5334544901428229844>ℹ️</emoji> <b>Bio:</b> <b>{user['bio'] or '❌'}</b>"
-            )
-
-            await message.client.send_file(
-                message.chat_id,
-                user['avatar_url'],
-                caption=text,
-                reply_to=message.reply_to_msg_id
+                f"<emoji document_id=5296237851891998039>😸</emoji> <b>Github profile:</b>\n\n"
+                f"<emoji document_id=5879770735999717115>👤</emoji> <b>Main information:</b>\n"
+                f" ┣ <b>Github username:</b> <a href='https://github.com/{user['login']}'>{user['login']}</a>\n"
+                f" ┣ <b>Company:</b> {user['company'] or '❌'}\n"
+                f" ┣ <b>Account created:</b> {created_date}\n"
+                f" ┣ <b>Website:</b> {user['blog'] or '❌'}\n"
+                f" ┗ <b>Email:</b> {user['email'] or '❌'}\n\n"
+                f"<emoji document_id=5305610789717902392>📊</emoji> <b>Statistics:</b>\n"
+                f" ┣ <b>Followers:</b> {user['followers']}\n"
+                f" ┣ <b>Following:</b> {user['following']}\n"
+                f" ┣ <b>Public repositories:</b> {user['public_repos']}\n"
+                f" ┗ <b>Public gists:</b> {user['public_gists']}\n\n"
+                f"<emoji document_id=5472196174825901368>💡</emoji> <b>Most used languages:</b>\n"
+                f"{langs_text}"
             )
             
-            if message.out:
-                await message.delete()
-                
+            await utils.answer(message, text)
+
         except Exception as e:
             await utils.answer(message, self.strings["error"].format(str(e)))
