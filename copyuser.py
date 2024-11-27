@@ -7,8 +7,9 @@
 # https:/www.gnu.org/licenses/agpl-3.0.html
 # ------------------------------------------------------------
 # Author: @MeKsenon
-# Commands:
+# Commands: .copyuser .backupme .restoreme
 # scope: hikka_only
+# meta banner: https://i.ibb.co/515XxY1/e3583b3c-434a-49fc-b532-cc70a3b5eccc.jpg
 # meta developer: @kmodules
 # ------------------------------------------------------------
 
@@ -21,13 +22,37 @@ from telethon import types, functions
 import io
 import requests
 import os
-from telethon.tl.functions.channels import JoinChannelRequest
 
-version = (1, 0, 7)
+__version__ = (1, 0, 9)
 
 @loader.tds
 class ProfileToolsModule(loader.Module):
-    strings = {"name": "CopyUser"}
+    """Copy profile data from any user"""
+    strings = {
+        "name": "CopyUser",
+        "user_not_found": "<emoji document_id=5210952531676504517>❌</emoji><b>Failed to find user!</b>",
+        "specify_user": "<emoji document_id=5832251986635920010>➡️</emoji><b>Specify user (reply/@username/ID)!</b>",
+        "profile_copied": "<emoji document_id=5397916757333654639>➕</emoji> <b>User profile copied!</b>",
+        "username_not_found": "<emoji document_id=5240241223632954241>🚫</emoji> <b>User not found!</b>",
+        "invalid_username": "<emoji document_id=5240241223632954241>🚫</emoji> <b>Invalid username/ID format.</b>",
+        "backup_saved": "<emoji document_id=5294096239464295059>🔵</emoji> <b>Your current profile has been saved. You can restore it using</b> <code>restoreme</code>\n\n<b>⚙️ Current Avatar URL: {}</b>",
+        "no_backup": "❌ <b>No backup found!</b>",
+        "profile_restored": "<emoji document_id=5294096239464295059>🔵</emoji> <b>Your previous profile has been restored.</b>",
+        "error": "😵 Error: {}"
+    }
+
+    strings_ru = {
+        "name": "CopyUser",
+        "user_not_found": "<emoji document_id=5210952531676504517>❌</emoji><b>Не удалось найти пользователя!</b>",
+        "specify_user": "<emoji document_id=5832251986635920010>➡️</emoji><b>Укажите пользователя (reply/@username/ID)!</b>",
+        "profile_copied": "<emoji document_id=5397916757333654639>➕</emoji> <b>Профиль пользователя скопирован!</b>",
+        "username_not_found": "<emoji document_id=5240241223632954241>🚫</emoji> <b>Пользователь не найден!</b>", 
+        "invalid_username": "<emoji document_id=5240241223632954241>🚫</emoji> <b>Неверный формат юзернейма/ID.</b>",
+        "backup_saved": "<emoji document_id=5294096239464295059>🔵</emoji> <b>Ваш данный профиль сохранен. Вы можете вернуть его используя</b> <code>restoreme</code>\n\n<b>⚙️ URL данной Аватарки: {}</b>",
+        "no_backup": "❌ <b>Резервная копия не найдена!</b>",
+        "profile_restored": "<emoji document_id=5294096239464295059>🔵</emoji> <b>Ваш прошлый профиль возвращен.</b>",
+        "error": "😵 Ошибка: {}"
+    }
 
     def init(self):
         self.name = self.strings["name"]
@@ -36,7 +61,6 @@ class ProfileToolsModule(loader.Module):
     async def client_ready(self, client, db):
         self.client = client
         self.db = db
-        await self.client(JoinChannelRequest("kmodules"))
 
     async def upload_to_0x0(self, photo_bytes):
         try:
@@ -48,11 +72,10 @@ class ProfileToolsModule(loader.Module):
             )
             return response.text.strip()
         except Exception as e:
-            return f"Ошибка: {str(e)}"
+            return f"Error: {str(e)}"
 
-    @loader.command()
+    @loader.command(ru_doc="Скопировать профиль пользователя (работает по reply/@username/ID)", en_doc="Copy user profile (works with reply/@username/ID)")
     async def copyuser(self, message):
-        """Скопировать профиль пользователя (работает по reply/@username/ID)"""
         args = utils.get_args_raw(message)
         reply = await message.get_reply_message()
         
@@ -64,12 +87,12 @@ class ProfileToolsModule(loader.Module):
                     else:
                         user = await message.client.get_entity(args)
                 except ValueError:
-                    await utils.answer(message, "<emoji document_id=5210952531676504517>❌</emoji><b>Не удалось найти пользователя!</b>")
+                    await utils.answer(message, self.strings["user_not_found"])
                     return
             elif reply:
                 user = await reply.get_sender()
             else:
-                await utils.answer(message, "<emoji document_id=5832251986635920010>➡️</emoji><b>Укажите пользователя (reply/@username/ID)!</b>")
+                await utils.answer(message, self.strings["specify_user"])
                 return
 
             full = await message.client(GetFullUserRequest(user.id))
@@ -108,17 +131,16 @@ class ProfileToolsModule(loader.Module):
                 except:
                     pass
             
-            await utils.answer(message, "<emoji document_id=5397916757333654639>➕</emoji> <b>Профиль пользователя скопирован!</b>")
+            await utils.answer(message, self.strings["profile_copied"])
         except UsernameNotOccupiedError:
-            await utils.answer(message, "<emoji document_id=5240241223632954241>🚫</emoji> <b>Пользователь не найден!</b>")
+            await utils.answer(message, self.strings["username_not_found"])
         except UsernameInvalidError:
-            await utils.answer(message, "<emoji document_id=5240241223632954241>🚫</emoji> <b>Неверный формат юзернейма/ID.</b>")
+            await utils.answer(message, self.strings["invalid_username"])
         except Exception as e:
-            await utils.answer(message, f"😵 Ошибка: {str(e)}")
+            await utils.answer(message, self.strings["error"].format(str(e)))
 
-    @loader.command()
+    @loader.command(ru_doc="Создать резервную копию вашего профиля", en_doc="Create backup of your profile")
     async def backupme(self, message):
-        """Сделать резервную копию профиля"""
         try:
             user = await self.client.get_me()
             full = await self.client(GetFullUserRequest(user.id))
@@ -146,21 +168,20 @@ class ProfileToolsModule(loader.Module):
             
             await utils.answer(
                 message,
-                f"<emoji document_id=5294096239464295059>🔵</emoji> <b>Ваш данный профиль сохранен. Вы можете вернуть его используя</b> <code>restoreme</code>\n\n<b>⚙️ URL данной Аватарки: {avatar_url}</b>"
+                self.strings["backup_saved"].format(avatar_url)
             )
 
         except Exception as e:
-            await utils.answer(message, f"😵 Ошибка: {str(e)}")
+            await utils.answer(message, self.strings["error"].format(str(e)))
 
-    @loader.command()
+    @loader.command(ru_doc="Восстановить профиль из резервной копии", en_doc="Restore profile from backup") 
     async def restoreme(self, message):
-        """Восстановить профиль из резервной копии"""
         try:
             backup_data = self.db.get("BackupProfile", "backup_data")
             me = await message.client.get_me()
             
             if not backup_data:
-                await utils.answer(message, "❌ <b>Резервная копия не найдена!</b>")
+                await utils.answer(message, self.strings["no_backup"])
                 return
 
             if backup_data.get("avatar_url"):
@@ -195,10 +216,7 @@ class ProfileToolsModule(loader.Module):
                 except:
                     pass
 
-            await utils.answer(
-                message,
-                "<emoji document_id=5294096239464295059>🔵</emoji> <b>Ваш прошлый профиль возвращен.</b>"
-            )
+            await utils.answer(message, self.strings["profile_restored"])
 
         except Exception as e:
-            await utils.answer(message, f"😵 Ошибка: {str(e)}")
+            await utils.answer(message, self.strings["error"].format(str(e)))
