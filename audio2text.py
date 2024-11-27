@@ -9,6 +9,7 @@
 # Author: @MeKsenon
 # Commands: .audio2text
 # scope: hikka_only
+# meta banner: https://i.ibb.co/7k4sJRR/5ad271ae-ec1b-4803-a714-5d6628ee8f50.jpg
 # meta developer: @kmodules
 # ------------------------------------------------------------
 
