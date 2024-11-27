@@ -9,6 +9,7 @@
 # Author: @MeKsenon
 # Commands: .ytsearch
 # scope: hikka_only
+# meta banner: https://i.ibb.co/84JDV0z/29a858b1-0c80-4c88-8042-9d7622ebc7f9.jpg
 # meta developer: @kmodules
 # ------------------------------------------------------------
 
