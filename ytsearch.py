@@ -1,6 +1,6 @@
 # ------------------------------------------------------------
 # Module: YTSearch
-# Description: Поиск видео в YouTube.
+# Description: Поиск видео по YouTube.
 # Author: @kmodules
 # ------------------------------------------------------------
 # Licensed under the GNU AGPLv3
@@ -16,27 +16,35 @@ from .. import loader, utils
 import requests
 import io
 import re
-from telethon.tl.functions.channels import JoinChannelRequest
+
+__version__ = (1, 0, 1)
 
 @loader.tds
 class YouTubeSearchMod(loader.Module):
-    """🎬 Модуль для поиска видео на YouTube"""
+    """Module for searching videos on YouTube"""
     
     strings = {
         "name": "YTSearch",
-        "no_query": "🐣кажите поисковый запрос.",
+        "no_query": "Please specify a search query.",
+        "no_results": "No results found.", 
+        "processing": "<emoji document_id=5258274739041883702>🔍</emoji> <b>Searching on YouTube...</b>",
+        "error": "❌ Error: {}"
+    }
+    
+    strings_ru = {
+        "name": "YTSearch",
+        "no_query": "Укажите поисковый запрос.",
         "no_results": "Ничего не найдено.",
-        "processing": "<emoji document_id=5258274739041883702>🔍</emoji> <b>Ищу видео в YouTube...</b>"
+        "processing": "<emoji document_id=5258274739041883702>🔍</emoji> <b>Ищу видео в YouTube...</b>",
+        "error": "❌ Ошибка: {}"
     }
     
     async def client_ready(self, client, db):
         self.client = client
-        await client(JoinChannelRequest("kmodules"))
     
-    @loader.command()
+    @loader.command(ru_doc="Поиск видео на YouTube. Использование: .ytsearch <запрос>",
+                   en_doc="Search for videos on YouTube. Usage: .ytsearch <query>")
     async def ytsearch(self, message):
-        """ Поиск видео на YouTube. Использование: .ytsearch <запрос>"""
-        
         args = utils.get_args_raw(message)
         if not args:
             await utils.answer(message, self.strings["no_query"])
@@ -59,8 +67,8 @@ class YouTubeSearchMod(loader.Module):
             api_url = f"https://noembed.com/embed?url={video_url}"
             video_info = requests.get(api_url).json()
             
-            title = video_info.get("title", "Название недоступно")
-            author = video_info.get("author_name", "Автор недоступен")
+            title = video_info.get("title", "Title unavailable")
+            author = video_info.get("author_name", "Author unavailable")
             
             thumbnail_url = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
             thumb_response = requests.get(thumbnail_url)
@@ -86,5 +94,4 @@ class YouTubeSearchMod(loader.Module):
             await message.delete()
             
         except Exception as e:
-            await utils.answer(message, f"❌ Ошибка: {str(e)}")
-          
+            await utils.answer(message, self.strings["error"].format(str(e)))
