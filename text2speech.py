@@ -9,6 +9,7 @@
 # Author: @MeKsenon
 # Commands: .text2speech .t2s
 # scope: hikka_only
+# meta banner: https://i.ibb.co/Q6syvcG/5da73c45-b14f-4fe5-a8b6-85fc32a4b6c0.jpg
 # meta developer: @kmodules
 # ------------------------------------------------------------
 
@@ -16,13 +17,22 @@ from .. import loader, utils
 import requests
 import urllib.parse
 import os
-from telethon.tl.functions.channels import JoinChannelRequest
+
+__version__ = (1, 0, 1)
 
 @loader.tds
 class Text2SpeechMod(loader.Module):
-    """🎤 Модуль для преобразования текста в речь"""
+    """Module for converting text to speech"""
     
     strings = {
+        "name": "Text2Speech",
+        "processing": "<emoji document_id=5325834523068342417>🫥</emoji> <b>Converting text to speech...</b>\n\n<emoji document_id=5933541411558264121>🎤</emoji> <b>Voice: {}</b>",
+        "completed": "<emoji document_id=5897554554894946515>🎤</emoji> <b>Voice generated</b>!\n\n<emoji document_id=5776375003280838798>✅</emoji> <b>Text:</b> <code>{}</code>\n\n<emoji document_id=6048354593279053992>🗣</emoji> <b>Voice:</b> <i>{}</i>",
+        "error": "❌ Error occurred while creating audio",
+        "args_error": "<b>❌ Please specify text and voice (alex/sophia)!</b>"
+    }
+    
+    strings_ru = {
         "name": "Text2Speech",
         "processing": "<emoji document_id=5325834523068342417>🫥</emoji> <b>Озвучиваю текст...</b>\n\n<emoji document_id=5933541411558264121>🎤</emoji> <b>Голос: {}</b>",
         "completed": "<emoji document_id=5897554554894946515>🎤</emoji> <b>Голос озвучен</b>!\n\n<emoji document_id=5776375003280838798>✅</emoji> <b>Текст:</b> <code>{}</code>\n\n<emoji document_id=6048354593279053992>🗣</emoji> <b>Голос:</b> <i>{}</i>",
@@ -31,7 +41,7 @@ class Text2SpeechMod(loader.Module):
     }
 
     async def client_ready(self, client, db):
-        await client(JoinChannelRequest("kmodules"))
+        self.client = client
 
     async def t2s_process(self, message):
         args = utils.get_args_raw(message).split()
@@ -75,12 +85,12 @@ class Text2SpeechMod(loader.Module):
         except Exception:
             await utils.answer(message, self.strings["error"])
 
-    @loader.command()
+    @loader.command(ru_doc="Преобразовать текст в речь (использование: .text2speech <текст> <alex/sophia>)", 
+                   en_doc="Convert text to speech (usage: .text2speech <text> <alex/sophia>)")
     async def text2speech(self, message):
-        """Преобразовать текст в речь (использование: .text2speech <текст> <alex/sophia>)"""
         await self.t2s_process(message)
 
-    @loader.command()
+    @loader.command(ru_doc="Алиас команды .text2speech (использование: .t2s <текст> <alex/sophia>)",
+                   en_doc="Alias for .text2speech command (usage: .t2s <text> <alex/sophia>)")
     async def t2s(self, message):
-        """Алиас команды .text2speech, использование: .t2s <текст> <alex/sophia>"""
         await self.t2s_process(message)
