@@ -1,13 +1,13 @@
 # ------------------------------------------------------------
 # Module: Audio2Text
-# Description: Модуль для распознования текста из аудио.
+# Description: Module for speech-to-text conversion.
 # Author: @kmodules
 # ------------------------------------------------------------
 # Licensed under the GNU AGPLv3
 # https:/www.gnu.org/licenses/agpl-3.0.html
 # ------------------------------------------------------------
 # Author: @MeKsenon
-# Commands:
+# Commands: .audio2text
 # scope: hikka_only
 # meta developer: @kmodules
 # ------------------------------------------------------------
@@ -15,13 +15,22 @@
 from .. import loader, utils
 import requests
 import asyncio
-from telethon.tl.functions.channels import JoinChannelRequest
+
+__version__ = (1, 0, 1)
 
 @loader.tds
 class Audio2TextMod(loader.Module):
-    """Модуль для распознования текста из аудио."""
+    """Module for speech-to-text conversion"""
 
     strings = {
+        "name": "Audio2Text",
+        "processing": "<emoji document_id=5332600281970517875>🫥</emoji> <b>Converting audio to text...</b>",
+        "success": "<emoji document_id=5897554554894946515>🎤</emoji> <b>Text recognized!</b>\n\n<emoji document_id=6048354593279053992>🗣</emoji> <code>{}</code>",
+        "no_reply": "Reply to a voice message!",
+        "error": "An error occurred!"
+    }
+
+    strings_ru = {
         "name": "Audio2Text",
         "processing": "<emoji document_id=5332600281970517875>🫥</emoji> <b>Распознаю текст из аудио...</b>",
         "success": "<emoji document_id=5897554554894946515>🎤</emoji> <b>Текст распознан!</b>\n\n<emoji document_id=6048354593279053992>🗣</emoji> <code>{}</code>",
@@ -31,14 +40,10 @@ class Audio2TextMod(loader.Module):
 
     async def client_ready(self, client, db):
         self.client = client
-        try:
-            await client(JoinChannelRequest("kmodules"))
-        except Exception:
-            pass
 
-    @loader.command()
+    @loader.command(ru_doc="Преобразовать аудио в текст (ответом на аудиосообщение)",
+                   en_doc="Convert audio to text (reply to voice message)")
     async def audio2text(self, message):
-        """Преобразовать аудио в текст (ответом на аудиосообщение)"""
         reply = await message.get_reply_message()
         if not reply or not reply.media:
             await utils.answer(message, self.strings["no_reply"])
