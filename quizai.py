@@ -9,6 +9,7 @@
 # Author: @MeKsenon
 # Commands: .quiz
 # scope: hikka_only
+# meta banner: https://i.ibb.co/NsMcJVJ/6116dddf-38f7-4bad-9b69-10c1e3c19fa5.jpg
 # meta developer: @kmodules
 # ------------------------------------------------------------
 
