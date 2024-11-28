@@ -9,11 +9,11 @@ import requests
 import json
 from bs4 import BeautifulSoup
 
-version = (1, 3, 7)
+version = (1, 3, 8)
 __version__ = version
 
 # --------------------------
-# changelog: Фикс флюкс и сд.
+# changelog: обязательно обновитесь, фикс(обновитесь хоть работает, ведь скоро обновление апи)
 # meta developer: Ksenon | @MeKsenon
 # scope: hikka_only 
 # --------------------------
@@ -95,9 +95,9 @@ class KsenonGPTMod(loader.Module):
         await utils.answer(message, f'<emoji document_id=5431456208487716895>🎨</emoji> <b>Генерирую изображение по запросу </b><code>"{args}"</code>...\n<emoji document_id=5334544901428229844>ℹ️</emoji> <b>Модель:</b> <i>{display_model}</i>\n{hint}')
 
         if model == "flux-pro":
-            url = "https://api.r00t.us.kg/v1/image/flux"
+            url = "http://theksenon.pro/api/flux/generate"
         elif model == "sdxl":
-            url = "https://api.r00t.us.kg/v1/image/sd"
+            url = "http://theksenon.pro/api/sdxl/generate"
         else:
             url = f"http://api.theksenon.pro/api/{model.split('-')[0]}/generate"
 
