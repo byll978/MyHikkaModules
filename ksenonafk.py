@@ -7,7 +7,7 @@
 # https:/www.gnu.org/licenses/agpl-3.0.html
 # ------------------------------------------------------------
 # Author: @MeKsenon
-# Commands: .afk .unafk
+# Commands: .afk .unafk .ignorusers .timeafk
 # scope: hikka_only
 # meta banner: https://i.ibb.co/gy5xbPd/d4be263e-63b5-42e1-ac2b-0dac067b0623.jpg
 # meta developer: @kmodules
@@ -15,15 +15,18 @@
 
 from .. import loader, utils
 from telethon import types, functions
-import time 
+import time
 import datetime
 import logging
 import subprocess
+from collections import defaultdict
+
+__version__ = (1, 0, 6)
 
 name = "KsenonAFK"
 logger = logging.getLogger(name)
 
-@loader.tds 
+@loader.tds
 class KsenonAFKMod(loader.Module):
     """Универсальный AFK модуль с поддержкой кастом сообщения и премиум статуса."""
 
@@ -38,7 +41,9 @@ class KsenonAFKMod(loader.Module):
         "default_afk_message": "<emoji document_id=5870948572526022116>✋</emoji> <b>Сейчас я в AFK режиме</b>\n<emoji document_id=5870695289714643076>👤</emoji> <b>Был в сети:</b> {was_online} назад\n{reason_text}{come_time}",
         "reason_text": "<emoji document_id=5870729937215819584>⏰️</emoji> <b>Ушел по причине:</b> <i>{reason}</i>\n",
         "come_text": "<emoji document_id=5873146865637133757>🎤</emoji> <b>Прийду в:</b> <b>{come_time}</b>",
-        "no_reason": "Нету"
+        "no_reason": "Нету",
+        "ignore_set": "✅ Установлено ограничение: {} сообщений за {} минут в одном чате",
+        "time_limit_set": "✅ Установлено ограничение: {} сообщений за {} минут (ЛС: {} сообщений)"
     }
 
     strings_ru = {
@@ -51,19 +56,21 @@ class KsenonAFKMod(loader.Module):
         "default_afk_message": "<emoji document_id=5870948572526022116>✋</emoji> <b>Сейчас я в AFK режиме</b>\n<emoji document_id=5870695289714643076>👤</emoji> <b>Был в сети:</b> {was_online} назад\n{reason_text}{come_time}",
         "reason_text": "<emoji document_id=5870729937215819584>⏰️</emoji> <b>Ушел по причине:</b> <i>{reason}</i>\n",
         "come_text": "<emoji document_id=5873146865637133757>🎤</emoji> <b>Прийду в:</b> <b>{come_time}</b>",
-        "no_reason": "Нету"
+        "no_reason": "Нету",
+        "ignore_set": "✅ Установлено ограничение: {} сообщений за {} минут в одном чате",
+        "time_limit_set": "✅ Установлено ограничение: {} сообщений за {} минут (ЛС: {} сообщений)"
     }
-
+    
     def __init__(self):
         self.config = loader.ModuleConfig(
             loader.ConfigValue(
                 "alwaysAnswer",
-                True,
-                lambda: "Отвечать всегда когда тэгнули.", 
+                False,
+                lambda: "Отвечать всегда когда тэгнули.",
                 validator=loader.validators.Boolean()
             ),
             loader.ConfigValue(
-                "setPremiumStatus", 
+                "setPremiumStatus",
                 True,
                 lambda: "Ставить премиум статус при афк.",
                 validator=loader.validators.Boolean()
@@ -79,8 +86,21 @@ class KsenonAFKMod(loader.Module):
                 "{default}",
                 lambda: "Кастом AFK сообщение. Функции:\n{was_online} - последний раз в сети\n{reason} - AFK причина\n{come_time} - Время возвращения\n{default} - Дефолт сообщение.",
                 validator=loader.validators.String()
+            ),
+            loader.ConfigValue(
+                "customEmojiStatus",
+                4969889971700761796,
+                lambda: "Здесь вы можете поставить кастомный премиум статус. Взять Document ID статуса легко, отправьте премиум стикер, напишите e r.text и там же выйдет document_id. Вставьте только цифры.",
+                validator=loader.validators.Integer()
             )
         )
+        self.answered_users = set()
+        self.chat_messages = defaultdict(list)
+        self.ignore_limit = None 
+        self.ignore_time = None
+        self.pm_limit = None
+        self.chat_limit = None
+        self.time_interval = None
 
     async def client_ready(self, client, db):
         self._db = db
@@ -91,9 +111,9 @@ class KsenonAFKMod(loader.Module):
     def _get_timezone(self):
         try:
             process = subprocess.Popen(['timedatectl', '|', 'grep', '"Time zone"'],
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.PIPE,
-                                     shell=True)
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                    shell=True)
             output, _ = process.communicate()
             timezone = output.decode().split(': ')[1].strip()
             return timezone
@@ -144,7 +164,7 @@ class KsenonAFKMod(loader.Module):
                     self._old_status = me.emoji_status
                 await self.client(functions.account.UpdateEmojiStatusRequest(
                     emoji_status=types.EmojiStatus(
-                        document_id=4969889971700761796
+                        document_id=self.config["customEmojiStatus"]
                     )
                 ))
             except Exception as e:
@@ -153,6 +173,8 @@ class KsenonAFKMod(loader.Module):
         self._db.set(name, "afk", reason or True)
         self._db.set(name, "gone", time.time())
         self._db.set(name, "return_time", time_val)
+        self.answered_users.clear()
+        self.chat_messages.clear()
 
         preview_message = "<emoji document_id=5870730156259152122>😀</emoji> <b>AFK режим включен!</b>\n<emoji document_id=5877700484453634587>✈️</emoji> <b>KsenonAFK будет отвечать вам этим сообщением:</b>\n\n"
         preview = self._format_custom_message("Только что", reason, time_val)
@@ -165,6 +187,8 @@ class KsenonAFKMod(loader.Module):
         self._db.set(name, "afk", False)
         self._db.set(name, "gone", None)
         self._db.set(name, "return_time", None)
+        self.answered_users.clear()
+        self.chat_messages.clear()
 
         if self.config["setPremiumStatus"] and self._old_status:
             try:
@@ -176,6 +200,63 @@ class KsenonAFKMod(loader.Module):
 
         await utils.answer(message, self.strings["back"])
 
+    @loader.command(ru_doc="<кол-во> <минуты> - Установить ограничение сообщений в чате")
+    async def ignorusers(self, message):
+        """<count> <minutes> - Set message limit per chat"""
+        args = utils.get_args(message)
+        if len(args) != 2:
+            return await message.edit("❌ Необходимо указать количество сообщений и время в минутах")
+        
+        try:
+            msg_limit = int(args[0])
+            time_limit = int(args[1])
+        except ValueError:
+            return await message.edit("❌ Аргументы должны быть числами")
+
+        self.ignore_limit = msg_limit
+        self.ignore_time = time_limit * 60
+        
+        await message.edit(self.strings["ignore_set"].format(msg_limit, time_limit))
+
+    @loader.command(ru_doc="<минуты> <макс.сообщений> - Установить временной лимит сообщений") 
+    async def timeafk(self, message):
+        """<minutes> <max_msgs> - Set time-based message limits"""
+        args = utils.get_args(message)
+        if len(args) != 2:
+            return await message.edit("❌ Необходимо указать интервал в минутах и максимальное количество сообщений")
+        
+        try:
+            interval = int(args[0])
+            max_msgs = int(args[1])
+        except ValueError:
+            return await message.edit("❌ Аргументы должны быть числами")
+
+        self.time_interval = interval * 60
+        self.pm_limit = 2  
+        self.chat_limit = max_msgs
+        
+        await message.edit(self.strings["time_limit_set"].format(max_msgs, interval, 2))
+
+    def _check_limits(self, chat_id, is_pm=False):
+        current_time = time.time()
+        
+        if self.ignore_limit and self.ignore_time:
+            self.chat_messages[chat_id] = [msg_time for msg_time in self.chat_messages[chat_id] 
+                                         if current_time - msg_time < self.ignore_time]
+            if len(self.chat_messages[chat_id]) >= self.ignore_limit:
+                return False
+
+        if self.time_interval:
+            limit = self.pm_limit if is_pm else self.chat_limit
+            recent_msgs = [msg_time for msg_time in self.chat_messages[chat_id] 
+                          if current_time - msg_time < self.time_interval]
+            if len(recent_msgs) >= limit:
+                return False
+            self.chat_messages[chat_id] = recent_msgs
+
+        self.chat_messages[chat_id].append(current_time)
+        return True
+
     async def watcher(self, message):
         if not isinstance(message, types.Message):
             return
@@ -185,12 +266,21 @@ class KsenonAFKMod(loader.Module):
             if not afk_state:
                 return
 
-            if not self.config["alwaysAnswer"]:
-                return
-
             user = await utils.get_user(message)
             if user.is_self or user.bot or user.verified:
                 return
+
+            if not self.config["alwaysAnswer"] and user.id in self.answered_users:
+                return
+
+            is_pm = isinstance(message.to_id, types.PeerUser)
+            chat_id = user.id if is_pm else message.chat_id
+
+            if not self._check_limits(chat_id, is_pm):
+                return
+
+            if not self.config["alwaysAnswer"]:
+                self.answered_users.add(user.id)
 
             now = datetime.datetime.now().replace(microsecond=0)
             gone = datetime.datetime.fromtimestamp(
