@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup
 __version__ = (1, 3, 9)
 version = __version__ 
 
-# changelog: Добавлена gpt-4-turbo, английский язык, фиксы, обязательно обновитесь 
+# changelog: Добавлена gpt-4-turbo, английский язык, фиксы, обязательно обновитесь!!
 
 @loader.tds
 class KsenonGPTMod(loader.Module):
