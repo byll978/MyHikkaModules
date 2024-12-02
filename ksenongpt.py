@@ -9,10 +9,14 @@ import requests
 import json
 from bs4 import BeautifulSoup
 
-__version__ = (1, 3, 9)
-version = __version__ 
+version = (1, 3, 9)
+__version__ = version
 
+# --------------------------
 # changelog: Добавлена gpt-4-turbo, английский язык, фиксы, обязательно обновитесь!!
+# meta developer: Ksenon | @MeKsenon
+# scope: hikka_only 
+# --------------------------
 
 @loader.tds
 class KsenonGPTMod(loader.Module):
