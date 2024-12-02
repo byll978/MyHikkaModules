@@ -9,7 +9,8 @@ import requests
 import json
 from bs4 import BeautifulSoup
 
-version = (1, 3, 9)
+
+version = (1, 3, 8)
 __version__ = version
 
 # --------------------------
