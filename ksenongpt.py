@@ -10,7 +10,7 @@ import json
 from bs4 import BeautifulSoup
 
 
-version = (1, 3, 8)
+version = (1, 4, 1)
 __version__ = version
 
 # --------------------------
