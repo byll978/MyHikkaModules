@@ -1,3 +1,4 @@
+# Licensed under GNU
 from .. import loader, utils
 import aiohttp
 import io
