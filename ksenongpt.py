@@ -11,8 +11,8 @@ import json
 from bs4 import BeautifulSoup
 
 
-version = (1, 4, 1)
-__version__ = version
+__version__ = "1.4.1"
+version = __version__
 
 # --------------------------
 # changelog: Добавлена gpt-4-turbo, английский язык, фиксы, обязательно обновитесь!!
