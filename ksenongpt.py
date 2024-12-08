@@ -11,7 +11,7 @@ import json
 from bs4 import BeautifulSoup
 
 
-__version__ = "1.4.1"
+__version__ = (1, 4, 1)
 version = __version__
 
 # --------------------------
