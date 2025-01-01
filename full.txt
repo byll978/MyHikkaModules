@@ -8,3 +8,6 @@ audio2text
 ksenonafk
 ytsearch
 github
+counttime
+wikisearch
+randomfact
