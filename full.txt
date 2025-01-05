@@ -11,3 +11,4 @@ github
 counttime
 wikisearch
 randomfact
+kweather
