@@ -12,3 +12,4 @@ counttime
 wikisearch
 randomfact
 kweather
+currency
