@@ -12,7 +12,7 @@ import re
 # meta developer: @kmodules
 # ------------------------------------------------------- #
 
-__ version__ = (1, 0, 0)
+__version__ = (1, 0, 0)
 
 @loader.tds
 class CustomInfoMod(loader.Module):
