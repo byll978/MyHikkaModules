@@ -2,6 +2,7 @@ ksenongpt
 copyuser
 telegraph
 randommemes
+kcustominfo
 text2speech
 quizai
 audio2text
