@@ -1,4 +1,4 @@
-from .. import loader, utils, version
+from .. import loader, utils
 import git
 import platform
 import psutil
@@ -7,12 +7,8 @@ import os
 from telethon.tl.types import MessageEntityUrl
 import re
 
-
-# ------------------------------------------------------- #
+__version__ = (1, 0, 1)
 # meta developer: @kmodules
-# ------------------------------------------------------- #
-
-__version__ = (1, 0, 0)
 
 @loader.tds
 class CustomInfoMod(loader.Module):
@@ -23,11 +19,7 @@ class CustomInfoMod(loader.Module):
         "update_available": "<b>Доступно обновление!</b>",
         "latest_version": "<b>У вас последняя версия.</b>",
     }
-
-    async def client_ready(self, client, db):
-        self.client = client
-        self.db = db
-
+    
     def __init__(self):
         self.config = loader.ModuleConfig(
             "custom_info_text",
@@ -40,21 +32,17 @@ class CustomInfoMod(loader.Module):
             "<emoji document_id=5258113901106580375>⌛</emoji> <b>Аптайм:</b> <b>{uptime}</b>\n"
             "<emoji document_id=5258466217273871977>💡</emoji> <b>Префикс:</b> «<b>{prefix}</b>»\n\n"
             "{system_info}",
-            """Шаблон для вывода информации
-            
-            {owner} - Вы,
-            {version} - Версия юзербота,
-            {update_status} - Статус версии,        
-            {uptime} - Аптайм,
-            {branch} - Ветка,
-            {ping} - Пинг юзербота
-            {prefix} - Префикс. 
-            """,
+            lambda: "Шаблон для вывода информации",
             
             "banner_url",
             "https://x0.at/7uTU.mp4",
-            "URL баннера, который будет отправлен с информацией (None чтобы отключить)"
+            lambda: "URL баннера, который будет отправлен с информацией (None чтобы отключить)"
         )
+
+    async def client_ready(self, client, db):
+        self.client = client
+        self.db = db
+        self._client = client
 
     def get_cpu_info(self):
         try:
@@ -88,13 +76,15 @@ class CustomInfoMod(loader.Module):
         """Показать информацию о юзерботе"""
         try:
             repo = git.Repo(search_parent_directories=True)
-            diff = repo.git.log([f"HEAD..origin/{version.branch}", "--oneline"])
+            branch = repo.active_branch.name
+            diff = repo.git.log([f"HEAD..origin/{branch}", "--oneline"])
             update_status = self.strings["update_available"] if diff else self.strings["latest_version"]
         except:
+            branch = "unknown"
             update_status = "Невозможно проверить обновления"
             
         start = time.perf_counter_ns()
-        msg = await message.client.send_message(message.peer_id, '⏳')
+        msg = await message.client.send_message("me", '⏳')
         ping = round((time.perf_counter_ns() - start) / 10**6, 3)
         await msg.delete()
 
@@ -115,25 +105,33 @@ class CustomInfoMod(loader.Module):
 
         info = self.config["custom_info_text"].format(
             owner=self._client.hikka_me.first_name + ' ' + (self._client.hikka_me.last_name or ''),
-            version='.'.join(map(str, list(version.__version__))),
-            branch=version.branch,
+            version='3.0.0',
+            branch=branch,
             update_status=update_status,
             prefix=self.get_prefix(),
             ping=ping,
             uptime=utils.formatted_uptime(),
             system_info=system_info
         )
+        
+        reply_to = await message.get_reply_message()
+        thread = getattr(message, 'message_thread_id', None)
 
         if self.config["banner_url"]:
             await self.client.send_file(
                 message.peer_id,
                 self.config["banner_url"],
-                caption=info
+                caption=info,
+                reply_to=reply_to.id if reply_to else None,
+                message_thread_id=thread
             )
             if message.out:
                 await message.delete()
         else:
-            await utils.answer(message, info)
+            await utils.answer(
+                message,
+                info
+            )
 
     @loader.command()
     async def setcinfo(self, message):
@@ -145,5 +143,3 @@ class CustomInfoMod(loader.Module):
 
         self.config["custom_info_text"] = args
         await utils.answer(message, "<emoji document_id=5314413943035278948>🧠</emoji><b> K:CustomInfo - текст поставлен.</b>")
-
-          
