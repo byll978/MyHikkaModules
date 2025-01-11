@@ -3,6 +3,9 @@ import io
 import requests
 import os
 
+# meta developer: @kmodules
+__version__ = (1, 0, 0)
+
 @loader.tds
 class UploaderMod(loader.Module):
     """Module for uploading files to various file hosting services"""
