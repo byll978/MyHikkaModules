@@ -6,27 +6,25 @@ import os
 @loader.tds
 class UploaderMod(loader.Module):
     """Module for uploading files to various file hosting services"""
-    
-# meta developer: @kmodules
-__version__ = (1, 0, 0)
 
     strings = {
-        "name": "K:Uploader",
+        "name": """K:Uploader""",
         "uploading": "⚡ <b>Uploading file...</b>",
         "reply_to_file": "❌ <b>Reply to file!</b>",
-        "uploaded": "❤️ <b>File uploaded!</b>\n🔥 <b>URL:</b> <code>{}</code>",
+        "uploaded": "❤️ <b>File uploaded!</b>\n\n🔥 <b>URL:</b> <code>{}</code>",
         "error": "❌ <b>Error while uploading: {}</b>"
     }
 
     strings_ru = {
-        "name": "K:Загрузчик", 
+        "name": """K:Uploader""", 
         "uploading": "⚡ <b>Загружаю файл...</b>",
         "reply_to_file": "❌ <b>Ответьте на файл!</b>", 
-        "uploaded": "❤️ <b>Файл загружен!</b>\n🔥 <b>URL:</b> <code>{}</code>",
+        "uploaded": "❤️ <b>Файл загружен!</b>\n\n🔥 <b>URL:</b> <code>{}</code>",
         "error": "❌ <b>Ошибка при загрузке: {}</b>"
     }
 
     async def _get_file(self, message):
+        """Helper to get file from message"""
         reply = await message.get_reply_message()
         if not reply:
             await utils.answer(message, self.strings["reply_to_file"])
@@ -133,4 +131,3 @@ __version__ = (1, 0, 0)
                 await utils.answer(message, self.strings["error"].format(response.status_code))
         except Exception as e:
             await utils.answer(message, self.strings["error"].format(str(e)))
-      
