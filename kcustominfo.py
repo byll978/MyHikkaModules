@@ -7,8 +7,10 @@ import os
 from telethon.tl.types import MessageEntityUrl
 import re
 
-__version__ = (1, 0, 1)
+
 # meta developer: @kmodules
+__version__ = (1, 0, 1)
+
 
 @loader.tds
 class CustomInfoMod(loader.Module):
