@@ -7,7 +7,7 @@ __version__ = (1, 0, 0)
 
 @loader.tds
 class ShortLinkerMod(loader.Module):
-    """Модуль для укорочения ссылок."""
+    """Модуль для сокращения ссылок."""
     
     strings = {
         "name": "K:ShortLinker",
