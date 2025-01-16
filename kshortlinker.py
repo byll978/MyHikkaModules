@@ -1,6 +1,9 @@
 from .. import loader, utils
 import requests
 
+# meta developer: @kmodules
+__version__ = (1, 0, 0)
+
 
 @loader.tds
 class ShortLinkerMod(loader.Module):
