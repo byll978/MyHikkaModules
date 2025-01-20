@@ -115,7 +115,7 @@ class RussianRouletteModule(loader.Module):
             elif punishment == "Рандомный префикс":
                 new_prefix = await self._generate_random_prefix()
                 await self.invoke("setprefix", new_prefix, message=call.form["message"])
-            else:  # Удаление всех модулей
+            else:
                 path, _ = await self._get_modules_path()
                 if path:
                     try:
