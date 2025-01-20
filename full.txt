@@ -16,3 +16,4 @@ wikisearch
 randomfact
 kweather
 currency
+russianroulette 
