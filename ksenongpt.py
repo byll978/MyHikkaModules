@@ -6,11 +6,11 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-__version__ = (1, 5, 1)
 # meta developer: @kmodules
-version = __version__
+# changelog: Фикс, добавлена команда .setmodel
 
-# changelog: Добавлена команда .setmodel
+__version__ = (1, 5, 2)
+version = __version__
 
 @loader.tds
 class KsenonGPTMod(loader.Module):
@@ -28,7 +28,7 @@ class KsenonGPTMod(loader.Module):
         "text_models": "<emoji document_id=5879585266426973039>🌐</emoji> <b>Text models:</b>\n\n<blockquote>o1-preview\ngpt-4o\nclaude-3-5-sonnet\nsearchgpt (GPT + Internet)\nblackboxai-pro\nclaude-3-5-sonnet-20240620\nclaude-3-haiku-ddg\ngemini-1.5-pro-latest\nllama-3.1-405b\ngpt-3.5-turbo-202201\ngpt-4o-mini-ddg\ngpt-4o-2024-05-13\nmicrosoft/Phi-3.5-mini-instruct\nQwen/Qwen2.5-Coder-32B-Instruct\nQwen/QwQ-32B-Preview</blockquote>\n\n<emoji document_id=5843908536467198016>✅️</emoji> <b>We have 167 models!</b>\n<emoji document_id=5778423822940114949>🛡</emoji><b> </b><a href=\"api.theksenon.pro/v1/api/text/models\"><b>api.theksenon.pro/v1/api/text/models</b></a>",
         "image_models": "<emoji document_id=5879585266426973039>🌐</emoji> <b>Image models:</b>\n\n<blockquote><b>flux-pro-mg\nflux-dev\nsd3-ultra\npixart-alpha</b></blockquote>",
         "no_args": "<emoji document_id=5881702736843511327>⚠️</emoji> <b>No arguments provided!</b>",
-        "update_available": "<emoji document_id=5420323339723881652>⚠️</emoji> <b>KsenonGPT update available!</b>\n\n<emoji document_id=5449683594425410231>🔼</emoji> <b>New version: {}</b>\n<emoji document_id=5447183459602669338>🔽</emoji> <b>Current version: {}</b>\n\n<emoji document_id=5447410659077661506>🌐</emoji> <b>Changelog:</b>\n<emoji document_id=5458603043203327669>🔔</emoji> <i>{}</i>\n\n<emoji document_id=5206607081334906820>✔️</emoji> <b>Command to update:</b>\n<code>.dlmod http://aeza.theksenon.pro/v1/api/ksenongpt.py</code>",
+        "update_available": "<emoji document_id=5420323339723881652>⚠️</emoji> <b>KsenonGPT update available!</b>\n\n<emoji document_id=5449683594425410231>🔼</emoji> <b>New version: {}</b>\n<emoji document_id=5447183459602669338>🔽</emoji> <b>Current version: {}</b>\n\n<emoji document_id=5447410659077661506>🌐</emoji> <b>Changelog:</b>\n<emoji document_id=5458603043203327669>🔔</emoji> <i>{}</i>\n\n<emoji document_id=5206607081334906820>✔️</emoji> <b>Command to update:</b>\n<code>.dlmod https://raw.githubusercontent.com/TheKsenon/MyHikkaModules/refs/heads/main/ksenongpt.py</code>",
         "latest_version": "<emoji document_id=5370870691140737817>🥳</emoji> <b>You have the latest version of KsenonGPT!</b>\n\n<emoji document_id=5447644880824181073>⚠️</emoji><b>Developers are making updates and fixes almost every day, check frequently!</b>",
         "select_model": "<b>🤖 Select AI model:\n\n🔑 You can also specify a model directly by using .setmodel model_name</b>",
         "model_set": "<b>🎯 Model has been set to: {}</b>",
@@ -48,7 +48,7 @@ class KsenonGPTMod(loader.Module):
         "text_models": "<emoji document_id=5879585266426973039>🌐</emoji> <b>Текстовые модели:</b>\n\n<blockquote>o1-preview\ngpt-4o\nclaude-3-5-sonnet\nsearchgpt (GPT + Internet)\nblackboxai-pro\nclaude-3-5-sonnet-20240620\nclaude-3-haiku-ddg\ngemini-1.5-pro-latest\nllama-3.1-405b\ngpt-3.5-turbo-202201\ngpt-4o-mini-ddg\ngpt-4o-2024-05-13\nmicrosoft/Phi-3.5-mini-instruct\nQwen/Qwen2.5-Coder-32B-Instruct\nQwen/QwQ-32B-Preview</blockquote>\n\n<emoji document_id=5843908536467198016>✅️</emoji> <b>У нас 167 моделей!</b>\n<emoji document_id=5778423822940114949>🛡</emoji><b> </b><a href=\"api.theksenon.pro/v1/api/text/models\"><b>api.theksenon.pro/v1/api/text/models</b></a>",
         "image_models": "<emoji document_id=5879585266426973039>🌐</emoji> <b>Модели для изображений:</b>\n\n<blockquote><b>flux-pro-mg\nflux-dev\nsd3-ultra\npixart-alpha</b></blockquote>",
         "no_args": "<emoji document_id=5881702736843511327>⚠️</emoji> <b>Не указаны аргументы!</b>",
-        "update_available": "<emoji document_id=5420323339723881652>⚠️</emoji> <b>Доступно обновление KsenonGPT!</b>\n\n<emoji document_id=5449683594425410231>🔼</emoji> <b>Новая версия: {}</b>\n<emoji document_id=5447183459602669338>🔽</emoji> <b>Текущая версия: {}</b>\n\n<emoji document_id=5447410659077661506>🌐</emoji> <b>Список изменений:</b>\n<emoji document_id=5458603043203327669>🔔</emoji> <i>{}</i>\n\n<emoji document_id=5206607081334906820>✔️</emoji> <b>Команда для обновления:</b>\n<code>.dlmod http://aeza.theksenon.pro/v1/api/ksenongpt.py</code>",
+        "update_available": "<emoji document_id=5420323339723881652>⚠️</emoji> <b>Доступно обновление KsenonGPT!</b>\n\n<emoji document_id=5449683594425410231>🔼</emoji> <b>Новая версия: {}</b>\n<emoji document_id=5447183459602669338>🔽</emoji> <b>Текущая версия: {}</b>\n\n<emoji document_id=5447410659077661506>🌐</emoji> <b>Список изменений:</b>\n<emoji document_id=5458603043203327669>🔔</emoji> <i>{}</i>\n\n<emoji document_id=5206607081334906820>✔️</emoji> <b>Команда для обновления:</b>\n<code>.dlmod https://raw.githubusercontent.com/TheKsenon/MyHikkaModules/refs/heads/main/ksenongpt.py</code>",
         "latest_version": "<emoji document_id=5370870691140737817>🥳</emoji> <b>У вас последняя версия KsenonGPT!</b>\n\n<emoji document_id=5447644880824181073>⚠️</emoji><b>Разработчики делают обновления и исправления почти каждый день, проверяйте чаще!</b>",
         "select_model": "<b>🤖 Выберите ИИ модель:\n\n🔑 Также вы можете указать конкретную модель, напишите .setmodel название_модели</b>",
         "model_set": "<b>🎯 Модель установлена: {}</b>",
@@ -94,14 +94,11 @@ class KsenonGPTMod(loader.Module):
         return buttons
 
     async def setmodelcmd(self, message):
-        """Поставить default модель."""
+        """Set default AI model for text generation"""
         args = utils.get_args_raw(message)
         if args:
-            if args in ["o1-preview", "gpt-4o", "claude-3-5-sonnet", "searchgpt", "claude-3-haiku-ddg", "gpt-4o-mini-ddg"]:
-                self.config["default_model"] = args
-                await utils.answer(message, self.strings["model_set"].format(args))
-            else:
-                await utils.answer(message, self.strings["invalid_model"])
+            self.config["default_model"] = args
+            await utils.answer(message, self.strings["model_set"].format(args))
             return
 
         await self.inline.form(
@@ -294,29 +291,28 @@ class KsenonGPTMod(loader.Module):
     async def kupdatecmd(self, message):
         """Check for updates"""
         async with aiohttp.ClientSession() as session:
-            async with session.get("http://api.theksenon.pro/v1/api/version") as response:
+            async with session.get("https://raw.githubusercontent.com/TheKsenon/MyHikkaModules/refs/heads/main/ksenongpt.py") as response:
                 if response.status != 200:
                     return
                     
                 content = await response.text()
                 
-                version_match = content.split('\n')[0]
-                changelog_match = content.split('# changelog: ')[1] if '# changelog: ' in content else "No information"
-                
-                latest_version = tuple(map(int, version_match.strip().split('.')))
-                
-                current_version = ".".join(map(str, version))
-                new_version = ".".join(map(str, latest_version))
-                
-                if latest_version > version:
-                    await utils.answer(
-                        message,
-                        self.strings["update_available"].format(
-                            new_version,
-                            current_version,
-                            changelog_match,
-                            "http://api.theksenon.pro/v1/api/ksenongpt.py"
+                try:
+                    version_line = [line for line in content.split("\n") if "__version__" in line][0]
+                    latest_version = tuple(map(int, version_line.split("(")[1].split(")")[0].split(",")))
+                    
+                    if latest_version > version:
+                        changelog = "New version available!" 
+                        
+                        await utils.answer(
+                            message,
+                            self.strings["update_available"].format(
+                                ".".join(map(str, latest_version)),
+                                ".".join(map(str, version)),
+                                changelog
+                            )
                         )
-                    )
-                else:
-                    await utils.answer(message, self.strings["latest_version"])
+                    else:
+                        await utils.answer(message, self.strings["latest_version"])
+                except:
+                    logger.error("Failed to parse version from GitHub")
