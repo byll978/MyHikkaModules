@@ -4,9 +4,10 @@ import asyncio
 import os
 import string
 import subprocess
+from telethon.tl.functions.account import UpdateProfileRequest
 
 # meta developer: @kmodules
-__version__ = (1, 0, 0)
+version = (1, 0, 1)
 
 @loader.tds
 class RussianRouletteModule(loader.Module):
@@ -14,53 +15,71 @@ class RussianRouletteModule(loader.Module):
 
     strings = {
         "name": "RussianRoulette", 
-        "loaded": "🔫 <b>You loaded the gun.\n\n🔗 Bullet: {}/6</b>\n\n👁️‍🗨️ <b>Shoot?</b>",
-        "lucky": "🙂 <b>You got lucky!\n\n🔗 The dangerous bullet was: {}\n👁️‍🗨️ Bullet: {}/6</b>",
-        "unlucky": "🫨 <b>BANG! The bullet hit.\n\n😵‍💫 Punishment: {}</b>",
+        "loaded": "🔫 <b>You loaded the gun.\n\n🔗 Bullet: {}/5</b>\n\n👁️‍🗨️ <b>Shoot?</b>",
+        "lucky": "🙂 <b>You got lucky!\n\n🔗 The dangerous bullet was: {}\n👁️‍🗨️ Bullet: {}/5</b>",
+        "unlucky": "🫨 <b>BANG! The bullet hit.\n\n😵‍💫 Punishment: {}</b>", 
         "module_deleted": "🗑 Deleted module: {}",
+        "changed_name": "👤 Changed name to: {}",
+        "tagging": "🏷 Tagging users...",
+        "deleting_userbot": "🗑 Deleting userbot...",
+        "deleting_modules": "🗑 Deleting modules..."
     }
 
     strings_ru = {
         "name": "RussianRoulette",
-        "loaded": "🔫 <b>Вы зарядили пистолет.\n\n🔗 Пуля: {}/6</b>\n\n👁️‍🗨️ <b>Стрелять?</b>",
-        "lucky": "🙂 <b>Вам повезло!\n\n🔗 Опасной пулей была: {}\n👁️‍🗨️ Пуля: {}/6</b>",
+        "loaded": "🔫 <b>Вы зарядили пистолет.\n\n🔗 Пуля: {}/5</b>\n\n👁️‍🗨️ <b>Стрелять?</b>",
+        "lucky": "🙂 <b>Вам повезло!\n\n🔗 Опасной пулей была: {}\n👁️‍🗨️ Пуля: {}/5</b>",
         "unlucky": "🫨 <b>БАМ! Пуля попала.\n\n😵‍💫 Наказание: {}</b>",
         "module_deleted": "🗑 Удален модуль: {}",
+        "changed_name": "👤 Имя изменено на: {}",
+        "tagging": "🏷 Тегаю пользователей...",
+        "deleting_userbot": "🗑 Удаление юзербота...",
+        "deleting_modules": "🗑 Удаление модулей..."
     }
 
     async def _get_modules_path(self):
-        try:
-            if os.path.exists(os.path.expanduser("~/Hikka/loaded_modules")):
-                result = subprocess.run("cd && cd Hikka && cd loaded_modules && ls", 
-                                     shell=True, capture_output=True, text=True)
-                return os.path.expanduser("~/Hikka/loaded_modules"), result.stdout.split()
-            elif os.path.exists(os.path.expanduser("~/Heroku/loaded_modules")):
-                result = subprocess.run("cd && cd Heroku && cd loaded_modules && ls", 
-                                     shell=True, capture_output=True, text=True)
-                return os.path.expanduser("~/Heroku/loaded_modules"), result.stdout.split()
-        except:
-            return None, []
-        return None, []
-
-    async def _delete_random_module(self):
-        path, files = await self._get_modules_path()
-        if path and files:
-            random_file = random.choice(files)
-            try:
-                os.remove(os.path.join(path, random_file))
-                return random_file
-            except:
-                pass
+        process = subprocess.run("pwd", shell=True, capture_output=True, text=True)
+        current_path = process.stdout.strip()
+        
+        if "Hikka" in current_path:
+            return "Hikka"
+        elif "Heroku" in current_path:
+            return "Heroku"
         return None
+
+    async def _delete_modules(self):
+        subprocess.run("cd && cd Hikka && rm -rf loaded_modules", shell=True)
+
+    async def _delete_userbot(self):
+        userbot = await self._get_modules_path()
+        if userbot:
+            subprocess.run(f"cd && rm -rf {userbot}", shell=True)
 
     async def _generate_random_prefix(self):
         symbols = string.ascii_letters + string.punctuation
         return random.choice(symbols)
+        
+    async def _change_name(self):
+        names = ["Я человек", "Я не человек", "Веном официальный"]
+        new_name = random.choice(names)
+        await self.client(UpdateProfileRequest(
+            first_name=new_name,
+            last_name=""
+        ))
+        return new_name
+        
+    async def _tag_users(self, message):
+        chat = await message.get_chat()
+        if hasattr(chat, "participants"):
+            participants = await self.client.get_participants(chat)
+            users_to_tag = random.sample([user for user in participants if user.username], min(3, len(participants)))
+            tags = " ".join([f"@{user.username}" for user in users_to_tag])
+            await message.respond(tags)
 
     async def roulettecmd(self, message):
         """Начать игру в русскую рулетку"""
-        self.bullet = random.randint(1, 6)
-        current = random.randint(1, 6)
+        self.bullet = random.randint(1, 5)
+        current = random.randint(1, 5)
 
         buttons = [
             [
@@ -87,10 +106,12 @@ class RussianRouletteModule(loader.Module):
         if current == self.bullet:
             punishments = [
                 "Оставление юзербота", 
-                "Удаление рандомного модуля", 
+                "Удаление модулей",
                 "Перезапуск юзербота",
                 "Рандомный префикс",
-                "Удаление всех модулей"
+                "Удаление юзербота",
+                "Изменение имени",
+                "Тегание пользователей"
             ]
             punishment = random.choice(punishments)
             
@@ -102,32 +123,41 @@ class RussianRouletteModule(loader.Module):
                 await asyncio.sleep(1)
                 suspend_time = random.randint(30, 60)
                 await self.invoke("suspend", f"{suspend_time}", message=call.form["message"])
-            elif punishment == "Удаление рандомного модуля":
-                deleted_module = await self._delete_random_module()
-                if deleted_module:
-                    await call.edit(
-                        self.strings["unlucky"].format(punishment) + "\n\n" + 
-                        self.strings["module_deleted"].format(deleted_module)
-                    )
+            elif punishment == "Удаление модулей":
+                await call.edit(
+                    self.strings["unlucky"].format(punishment) + "\n\n" + 
+                    self.strings["deleting_modules"]
+                )
+                await self._delete_modules()
+                await asyncio.sleep(1)
+                await self.invoke("restart", "-f", message=call.form["message"])
             elif punishment == "Перезапуск юзербота":
                 await asyncio.sleep(1)
                 await self.invoke("restart", "-f", message=call.form["message"])
             elif punishment == "Рандомный префикс":
                 new_prefix = await self._generate_random_prefix()
                 await self.invoke("setprefix", new_prefix, message=call.form["message"])
-            else:
-                path, _ = await self._get_modules_path()
-                if path:
-                    try:
-                        for file in os.listdir(path):
-                            os.remove(os.path.join(path, file))
-                    except:
-                        pass
+            elif punishment == "Изменение имени":
+                new_name = await self._change_name()
+                await call.edit(
+                    self.strings["unlucky"].format(punishment) + "\n\n" + 
+                    self.strings["changed_name"].format(new_name)
+                )
+            elif punishment == "Тегание пользователей":
+                await call.edit(self.strings["tagging"])
+                await self._tag_users(call.form["message"])
+            else:  # Удаление юзербота
+                await call.edit(
+                    self.strings["unlucky"].format(punishment) + "\n\n" + 
+                    self.strings["deleting_userbot"]
+                )
+                await self._delete_userbot()
                 await asyncio.sleep(1)
                 await self.invoke("restart", "-f", message=call.form["message"])
+
         else:
-            new_current = random.randint(1, 6)
-            new_bullet = random.randint(1, 6)
+            new_current = random.randint(1, 5)
+            new_bullet = random.randint(1, 5)
             self.bullet = new_bullet
             
             buttons = [
@@ -150,8 +180,8 @@ class RussianRouletteModule(loader.Module):
             )
 
     async def reroll_callback(self, call, current):
-        self.bullet = random.randint(1, 6)
-        new_current = random.randint(1, 6)
+        self.bullet = random.randint(1, 5)
+        new_current = random.randint(1, 5)
         
         buttons = [
             [
