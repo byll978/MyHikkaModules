@@ -7,11 +7,11 @@ import subprocess
 from telethon.tl.functions.account import UpdateProfileRequest
 
 # meta developer: @kmodules
-__version__ = (1, 0, 2)
+__version__ = (1, 0, 3)
 
 @loader.tds
 class RussianRouletteModule(loader.Module):
-    """Русская рулетка. Немного безопаснее."""
+    """Русская рулетка. Немного ИСПОЛЬЗУЙТЕ НА СВОЙ СТРАХ И РИСК."""
 
     strings = {
         "name": "RussianRoulette", 
@@ -46,15 +46,7 @@ class RussianRouletteModule(loader.Module):
         elif "Heroku" in current_path:
             return "Heroku"
         return None
-
-    async def _delete_modules(self):
-        subprocess.run("cd && cd Hikka && rm -rf loaded_modules", shell=True)
-
-    async def _delete_userbot(self):
-        userbot = await self._get_modules_path()
-        if userbot:
-            subprocess.run(f"cd && rm -rf {userbot}", shell=True)
-
+        
     async def _generate_random_prefix(self):
         symbols = string.ascii_letters + string.punctuation
         return random.choice(symbols)
@@ -106,10 +98,8 @@ class RussianRouletteModule(loader.Module):
         if current == self.bullet:
             punishments = [
                 "Оставление юзербота", 
-                "Удаление модулей",
                 "Перезапуск юзербота",
                 "Рандомный префикс",
-                "Удаление юзербота",
                 "Ничего, повезло!",
                 "Тегание пользователей"
             ]
