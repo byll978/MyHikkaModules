@@ -7,7 +7,7 @@ import subprocess
 from telethon.tl.functions.account import UpdateProfileRequest
 
 # meta developer: @kmodules
-version = (1, 0, 1)
+__version__ = (1, 0, 2)
 
 @loader.tds
 class RussianRouletteModule(loader.Module):
@@ -60,7 +60,7 @@ class RussianRouletteModule(loader.Module):
         return random.choice(symbols)
         
     async def _change_name(self):
-        names = ["Я человек", "Я не человек", "Веном официальный"]
+        names = ["Доксер", "Пубертат", "Веном","ыыы крутой чел","офиц дев хикка","взломан школьником","ананас ы лучшиц доксер","фiжма стон стон"]
         new_name = random.choice(names)
         await self.client(UpdateProfileRequest(
             first_name=new_name,
@@ -110,7 +110,7 @@ class RussianRouletteModule(loader.Module):
                 "Перезапуск юзербота",
                 "Рандомный префикс",
                 "Удаление юзербота",
-                "Изменение имени",
+                "Ничего, повезло!",
                 "Тегание пользователей"
             ]
             punishment = random.choice(punishments)
@@ -137,7 +137,7 @@ class RussianRouletteModule(loader.Module):
             elif punishment == "Рандомный префикс":
                 new_prefix = await self._generate_random_prefix()
                 await self.invoke("setprefix", new_prefix, message=call.form["message"])
-            elif punishment == "Изменение имени":
+            elif punishment == "Ничего, повезло!":
                 new_name = await self._change_name()
                 await call.edit(
                     self.strings["unlucky"].format(punishment) + "\n\n" + 
