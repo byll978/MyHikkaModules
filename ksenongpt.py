@@ -6,8 +6,11 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-version = (1, 5, 0)
-__version__ = version
+__version__ = (1, 5, 1)
+# meta developer: @kmodules
+version = __version__
+
+# changelog: Добавлена команда .setmodel
 
 @loader.tds
 class KsenonGPTMod(loader.Module):
@@ -22,11 +25,15 @@ class KsenonGPTMod(loader.Module):
         "image_generated": "<emoji document_id=5766879414704935108>🖼</emoji> <b>Image generated!</b>\n\n<emoji document_id=5994544674604322765>🤖</emoji> <b>Model:</b> <code>{}</code>\n<emoji document_id=5877465816030515018>🔗</emoji> <b>Request:</b> <code>{}</code>\n\n<emoji document_id=5877307202888273539>📥</emoji> <b>Link:</b> {}",
         "error_blocked": "<emoji document_id=5832546462478635761>🔒</emoji> <b>You have been blocked!</b>\n\n<emoji document_id=5879896690210639947>🗑</emoji><b>NSFW | politics etc. generation is prohibited.</b>",
         "error_occurred": "<emoji document_id=5881702736843511327>⚠️</emoji> <b>An error occurred!</b>\n\n<emoji document_id=5967816500415827773>💻</emoji> <b>Model:</b> {}\n<emoji document_id=5874986954180791957>📶</emoji> <b>Server status, code:</b> {}\n<emoji document_id=5832251986635920010>➡️</emoji> <b>Error:</b> {}",
-        "text_models": "<emoji document_id=5879585266426973039>🌐</emoji> <b>Text models:</b>\n\n<blockquote>o1-preview\ngpt-4o\nclaude-3-5-sonnet\nsearchgpt (GPT + Internet)\nblackboxai-pro\nclaude-3-5-sonnet-20240620\nclaude-3-haiku-ddg\ngemini-1.5-pro-latest\nllama-3.1-405b\ngpt-3.5-turbo-202201\ngpt-4o-mini-ddg\ngpt-4o-2024-05-13\nmicrosoft/Phi-3.5-mini-instruct\nQwen/Qwen2.5-Coder-32B-Instruct\nQwen/QwQ-32B-Preview</blockquote>\n\n<emoji document_id=5843908536467198016>✅️</emoji> <b>We have 167 models!</b>\n<emoji document_id=5778423822940114949>🛡</emoji><b> </b><a href=\"theksenon.pro/v1/api/text/models\"><b>theksenon.pro/v1/api/text/models</b></a>",
+        "text_models": "<emoji document_id=5879585266426973039>🌐</emoji> <b>Text models:</b>\n\n<blockquote>o1-preview\ngpt-4o\nclaude-3-5-sonnet\nsearchgpt (GPT + Internet)\nblackboxai-pro\nclaude-3-5-sonnet-20240620\nclaude-3-haiku-ddg\ngemini-1.5-pro-latest\nllama-3.1-405b\ngpt-3.5-turbo-202201\ngpt-4o-mini-ddg\ngpt-4o-2024-05-13\nmicrosoft/Phi-3.5-mini-instruct\nQwen/Qwen2.5-Coder-32B-Instruct\nQwen/QwQ-32B-Preview</blockquote>\n\n<emoji document_id=5843908536467198016>✅️</emoji> <b>We have 167 models!</b>\n<emoji document_id=5778423822940114949>🛡</emoji><b> </b><a href=\"api.theksenon.pro/v1/api/text/models\"><b>api.theksenon.pro/v1/api/text/models</b></a>",
         "image_models": "<emoji document_id=5879585266426973039>🌐</emoji> <b>Image models:</b>\n\n<blockquote><b>flux-pro-mg\nflux-dev\nsd3-ultra\npixart-alpha</b></blockquote>",
         "no_args": "<emoji document_id=5881702736843511327>⚠️</emoji> <b>No arguments provided!</b>",
-        "update_available": "<emoji document_id=5420323339723881652>⚠️<emoji> <b>KsenonGPT update available!</b>\n\n<emoji document_id=5449683594425410231>🔼</emoji> <b>New version: {}</b>\n<emoji document_id=5447183459602669338>🔽</emoji> <b>Current version: {}</b>\n\n<emoji document_id=5447410659077661506>🌐</emoji> <b>Changelog:</b>\n<emoji document_id=5458603043203327669>🔔</emoji> <i>{}</i>\n\n<emoji document_id=5206607081334906820>✔️</emoji> <b>Command to update:</b>\n<code>.dlmod http://aeza.theksenon.pro/v1/api/ksenongpt.py</code>",
+        "update_available": "<emoji document_id=5420323339723881652>⚠️</emoji> <b>KsenonGPT update available!</b>\n\n<emoji document_id=5449683594425410231>🔼</emoji> <b>New version: {}</b>\n<emoji document_id=5447183459602669338>🔽</emoji> <b>Current version: {}</b>\n\n<emoji document_id=5447410659077661506>🌐</emoji> <b>Changelog:</b>\n<emoji document_id=5458603043203327669>🔔</emoji> <i>{}</i>\n\n<emoji document_id=5206607081334906820>✔️</emoji> <b>Command to update:</b>\n<code>.dlmod http://aeza.theksenon.pro/v1/api/ksenongpt.py</code>",
         "latest_version": "<emoji document_id=5370870691140737817>🥳</emoji> <b>You have the latest version of KsenonGPT!</b>\n\n<emoji document_id=5447644880824181073>⚠️</emoji><b>Developers are making updates and fixes almost every day, check frequently!</b>",
+        "select_model": "<b>🤖 Select AI model:\n\n🔑 You can also specify a model directly by using .setmodel model_name</b>",
+        "model_set": "<b>🎯 Model has been set to: {}</b>",
+        "invalid_model": "<b>❌ Invalid model specified!</b>",
+        "need_set_model": "<emoji document_id=5222148368955877900>🔥</emoji> <b>Please set the model using .setmodel command!</b>"
     }
 
     strings_ru = {
@@ -43,6 +50,10 @@ class KsenonGPTMod(loader.Module):
         "no_args": "<emoji document_id=5881702736843511327>⚠️</emoji> <b>Не указаны аргументы!</b>",
         "update_available": "<emoji document_id=5420323339723881652>⚠️</emoji> <b>Доступно обновление KsenonGPT!</b>\n\n<emoji document_id=5449683594425410231>🔼</emoji> <b>Новая версия: {}</b>\n<emoji document_id=5447183459602669338>🔽</emoji> <b>Текущая версия: {}</b>\n\n<emoji document_id=5447410659077661506>🌐</emoji> <b>Список изменений:</b>\n<emoji document_id=5458603043203327669>🔔</emoji> <i>{}</i>\n\n<emoji document_id=5206607081334906820>✔️</emoji> <b>Команда для обновления:</b>\n<code>.dlmod http://aeza.theksenon.pro/v1/api/ksenongpt.py</code>",
         "latest_version": "<emoji document_id=5370870691140737817>🥳</emoji> <b>У вас последняя версия KsenonGPT!</b>\n\n<emoji document_id=5447644880824181073>⚠️</emoji><b>Разработчики делают обновления и исправления почти каждый день, проверяйте чаще!</b>",
+        "select_model": "<b>🤖 Выберите ИИ модель:\n\n🔑 Также вы можете указать конкретную модель, напишите .setmodel название_модели</b>",
+        "model_set": "<b>🎯 Модель установлена: {}</b>",
+        "invalid_model": "<b>❌ Указана неверная модель!</b>",
+        "need_set_model": "<emoji document_id=5222148368955877900>🔥</emoji> <b>Поставьте модель в .setmodel!</b>"
     }
 
     def __init__(self):
@@ -52,13 +63,66 @@ class KsenonGPTMod(loader.Module):
                 "",
                 "API key from @ksenonapi_gettoken_bot",
                 validator=loader.validators.Hidden(),
+            ),
+            loader.ConfigValue(
+                "default_model",
+                "",
+                "Default AI model to use",
             )
         )
+        
+    def _create_model_buttons(self):
+        buttons = []
+        models = [
+            ("o1-preview", "o1-preview"),
+            ("GPT-4o", "gpt-4o"),
+            ("Claude 3.5 Sonnet", "claude-3-5-sonnet"),
+            ("SearchGPT", "searchgpt"),
+            ("Claude 3 Haiku", "claude-3-haiku-ddg"),
+            ("GPT-4o Mini", "gpt-4o-mini-ddg")
+        ]
+        
+        row = []
+        for i, (name, model_id) in enumerate(models):
+            row.append({"text": name, "callback": self._set_model, "args": (model_id,)})
+            if len(row) == 2:
+                buttons.append(row)
+                row = []
+        if row:
+            buttons.append(row)
+            
+        return buttons
+
+    async def setmodelcmd(self, message):
+        """Поставить default модель."""
+        args = utils.get_args_raw(message)
+        if args:
+            if args in ["o1-preview", "gpt-4o", "claude-3-5-sonnet", "searchgpt", "claude-3-haiku-ddg", "gpt-4o-mini-ddg"]:
+                self.config["default_model"] = args
+                await utils.answer(message, self.strings["model_set"].format(args))
+            else:
+                await utils.answer(message, self.strings["invalid_model"])
+            return
+
+        await self.inline.form(
+            text=self.strings["select_model"],
+            message=message,
+            reply_markup=self._create_model_buttons())
+
+    async def _set_model(self, call, model):
+        self.config["default_model"] = model
+        await call.edit(
+            self.strings["model_set"].format(model),
+            reply_markup=None)
 
     async def gentextcmd(self, message):
-        """Генерировать текст - .gentext <prompt> <model>"""
+        """Generate text - .gentext <prompt>"""
         if not self.config["api_key"]:
             await utils.answer(message, self.strings["no_api_key"])
+            return
+
+        if not self.config["default_model"]:
+            await utils.answer(message, self.strings["need_set_model"])
             return
 
         args = utils.get_args_raw(message)
@@ -66,11 +130,8 @@ class KsenonGPTMod(loader.Module):
             await utils.answer(message, self.strings["no_args"])
             return
 
-        try:
-            prompt, model = args.rsplit(maxsplit=1)
-        except ValueError:
-            prompt = args
-            model = "gpt-4o"
+        prompt = args
+        model = self.config["default_model"]
 
         msg = await utils.answer(message, self.strings["generating_text"])
 
@@ -127,7 +188,7 @@ class KsenonGPTMod(loader.Module):
                 )
 
     async def genimgcmd(self, message):
-        """Генерировать изображение - .genimg <prompt> <model>"""
+        """Generate image - .genimg <prompt> <model>"""
         if not self.config["api_key"]:
             await utils.answer(message, self.strings["no_api_key"])
             return
@@ -223,15 +284,15 @@ class KsenonGPTMod(loader.Module):
                         await message.delete()
 
     async def txtmodelscmd(self, message):
-        """Лист текстовых моделей"""
+        """List of text models"""
         await utils.answer(message, self.strings["text_models"])
 
     async def imgmodelscmd(self, message):
-        """Лист моделей для изображений"""
+        """List of image models"""
         await utils.answer(message, self.strings["image_models"])
         
     async def kupdatecmd(self, message):
-        """Проверить обновления"""
+        """Check for updates"""
         async with aiohttp.ClientSession() as session:
             async with session.get("http://api.theksenon.pro/v1/api/version") as response:
                 if response.status != 200:
@@ -240,7 +301,7 @@ class KsenonGPTMod(loader.Module):
                 content = await response.text()
                 
                 version_match = content.split('\n')[0]
-                changelog_match = content.split('# changelog: ')[1] if '# changelog: ' in content else "Нет информации"
+                changelog_match = content.split('# changelog: ')[1] if '# changelog: ' in content else "No information"
                 
                 latest_version = tuple(map(int, version_match.strip().split('.')))
                 
