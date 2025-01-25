@@ -1,10 +1,10 @@
 from .. import loader, utils
 import io
 import requests
-import os
+import json
 
 # meta developer: @kmodules
-__version__ = (1, 0, 0)
+__version__ = (1, 1, 0)
 
 @loader.tds
 class UploaderMod(loader.Module):
@@ -130,6 +130,68 @@ class UploaderMod(loader.Module):
             response = requests.post("https://x0.at", files={"file": file})
             if response.ok:
                 await utils.answer(message, self.strings["uploaded"].format(response.text))
+            else:
+                await utils.answer(message, self.strings["error"].format(response.status_code))
+        except Exception as e:
+            await utils.answer(message, self.strings["error"].format(str(e)))
+            
+    async def tmpfilescmd(self, message):
+        """Upload file to tmpfiles.org"""
+        await utils.answer(message, self.strings["uploading"])
+        file = await self._get_file(message)
+        if not file:
+            return
+
+        try:
+            response = requests.post(
+                "https://tmpfiles.org/api/v1/upload",
+                files={"file": file}
+            )
+            if response.ok:
+                data = json.loads(response.text)
+                url = data["data"]["url"]
+                await utils.answer(message, self.strings["uploaded"].format(url))
+            else:
+                await utils.answer(message, self.strings["error"].format(response.status_code))
+        except Exception as e:
+            await utils.answer(message, self.strings["error"].format(str(e)))
+
+    async def pomfcmd(self, message):
+        """Upload file to pomf.lain.la"""
+        await utils.answer(message, self.strings["uploading"])
+        file = await self._get_file(message)
+        if not file:
+            return
+
+        try:
+            response = requests.post(
+                "https://pomf.lain.la/upload.php",
+                files={"files[]": file}
+            )
+            if response.ok:
+                data = json.loads(response.text)
+                url = data["files"][0]["url"]
+                await utils.answer(message, self.strings["uploaded"].format(url))
+            else:
+                await utils.answer(message, self.strings["error"].format(response.status_code))
+        except Exception as e:
+            await utils.answer(message, self.strings["error"].format(str(e)))
+
+    async def bashcmd(self, message):
+        """Upload file to bashupload.com"""
+        await utils.answer(message, self.strings["uploading"])
+        file = await self._get_file(message)
+        if not file:
+            return
+
+        try:
+            response = requests.put(
+                "https://bashupload.com",
+                data=file.read()
+            )
+            if response.ok:
+                url = response.text.split("\n")[1].split(" ")[-1]
+                await utils.answer(message, self.strings["uploaded"].format(url))
             else:
                 await utils.answer(message, self.strings["error"].format(response.status_code))
         except Exception as e:
