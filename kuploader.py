@@ -4,7 +4,7 @@ import requests
 import json
 
 # meta developer: @kmodules
-__version__ = (1, 1, 0)
+__version__ = (1, 1, 1)
 
 @loader.tds
 class UploaderMod(loader.Module):
@@ -190,8 +190,12 @@ class UploaderMod(loader.Module):
                 data=file.read()
             )
             if response.ok:
-                url = response.text.split("\n")[1].split(" ")[-1]
-                await utils.answer(message, self.strings["uploaded"].format(url))
+                urls = [line for line in response.text.split("\n") if "wget" in line]
+                if urls:
+                    url = urls[0].split()[-1]
+                    await utils.answer(message, self.strings["uploaded"].format(url))
+                else:
+                    await utils.answer(message, self.strings["error"].format("Could not find URL"))
             else:
                 await utils.answer(message, self.strings["error"].format(response.status_code))
         except Exception as e:
