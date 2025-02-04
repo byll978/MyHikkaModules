@@ -72,7 +72,7 @@ class GenderGuesserMod(loader.Module):
     @loader.command()
     async def gendername(self, message):
         """Примерный гендер по имени.
-        Пример: .gendername John"""
+        Пример: .gendername Максим"""
         args = utils.get_args_raw(message)
         
         if not args:
