@@ -17,3 +17,5 @@ randomfact
 kweather
 currency
 russianroulette 
+genderguesser
+krandomuser
