@@ -7,21 +7,18 @@ import os
 from telethon.tl.types import MessageEntityUrl
 import re
 
-
+__version__ = (1, 1, 0)
 # meta developer: @kmodules
-__version__ = (1, 0, 1)
-
 
 @loader.tds
 class CustomInfoMod(loader.Module):
     """Улучшенная информация о юзерботе - ping, и т.д."""
-
     strings = {
-        "name": "K:CustomInfo", 
+        "name": "K:CustomInfo",
         "update_available": "<b>Доступно обновление!</b>",
         "latest_version": "<b>У вас последняя версия.</b>",
     }
-    
+
     def __init__(self):
         self.config = loader.ModuleConfig(
             "custom_info_text",
@@ -33,9 +30,11 @@ class CustomInfoMod(loader.Module):
             "<emoji document_id=5453900977432188793>⭐</emoji> <b>Ping:</b> <b>{ping}</b> <b>мс</b>\n"
             "<emoji document_id=5258113901106580375>⌛</emoji> <b>Аптайм:</b> <b>{uptime}</b>\n"
             "<emoji document_id=5258466217273871977>💡</emoji> <b>Префикс:</b> «<b>{prefix}</b>»\n\n"
-            "{system_info}",
+            "<emoji document_id=5873146865637133757>🎤</emoji> <b>RAM сервера:</b> <code>{ram_using} GB | {ram_total} GB</code>\n"
+            "<emoji document_id=5870982283724328568>⚙</emoji> <b>Память:</b> <code>{rom_using} GB | {rom_total} GB</code>\n\n"
+            "<emoji document_id=5391034312759980875>🥷</emoji><b> OC: {os_name} {os_version}</b>\n"
+            "<emoji document_id=5235588635885054955>🎲</emoji> <b>Процессор:</b> <b>{cpu_info}</b>",
             lambda: "Шаблон для вывода информации",
-            
             "banner_url",
             "https://x0.at/7uTU.mp4",
             lambda: "URL баннера, который будет отправлен с информацией (None чтобы отключить)"
@@ -72,7 +71,7 @@ class CustomInfoMod(loader.Module):
             return used, total
         except:
             return 0, 0
-            
+
     @loader.command()
     async def cinfo(self, message):
         """Показать информацию о юзерботе"""
@@ -84,26 +83,14 @@ class CustomInfoMod(loader.Module):
         except:
             branch = "unknown"
             update_status = "Невозможно проверить обновления"
-            
+
         start = time.perf_counter_ns()
         msg = await message.client.send_message("me", '⏳')
         ping = round((time.perf_counter_ns() - start) / 10**6, 3)
         await msg.delete()
 
-        platform_name = utils.get_platform_name()
-        is_termux = "Termux" in platform_name
-        
-        if is_termux:
-            system_info = ""
-        else:
-            ram_used, ram_total = self.get_ram_info()
-            disk_used, disk_total = self.get_disk_info()
-            system_info = (
-                f"<emoji document_id=5873146865637133757>🎤</emoji> <b>RAM сервера:</b> <code>{ram_used} GB | {ram_total} GB</code>\n"
-                f"<emoji document_id=5870982283724328568>⚙</emoji> <b>Память:</b> <code>{disk_used} GB | {disk_total} GB</code>\n\n"
-                f"<emoji document_id=5391034312759980875>🥷</emoji><b> OC: {platform.system()} {platform.release()}</b>\n"
-                f"<emoji document_id=5235588635885054955>🎲</emoji> <b>Процессор:</b> <b>{self.get_cpu_info()}</b>"
-            )
+        ram_used, ram_total = self.get_ram_info()
+        disk_used, disk_total = self.get_disk_info()
 
         info = self.config["custom_info_text"].format(
             owner=self._client.hikka_me.first_name + ' ' + (self._client.hikka_me.last_name or ''),
@@ -113,9 +100,15 @@ class CustomInfoMod(loader.Module):
             prefix=self.get_prefix(),
             ping=ping,
             uptime=utils.formatted_uptime(),
-            system_info=system_info
+            ram_using=ram_used,
+            ram_total=ram_total,
+            rom_using=disk_used,
+            rom_total=disk_total,
+            os_name=platform.system(),
+            os_version=platform.release(),
+            cpu_info=self.get_cpu_info()
         )
-        
+
         reply_to = await message.get_reply_message()
         thread = getattr(message, 'message_thread_id', None)
 
