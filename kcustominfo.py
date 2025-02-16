@@ -13,12 +13,14 @@ __version__ = (1, 1, 0)
 @loader.tds
 class CustomInfoMod(loader.Module):
     """Улучшенная информация о юзерботе - ping, и т.д."""
+
     strings = {
-        "name": "K:CustomInfo",
+        "name": "K:CustomInfo", 
         "update_available": "<b>Доступно обновление!</b>",
         "latest_version": "<b>У вас последняя версия.</b>",
+        "old_format_warning": "<b>✏️ Тег {system_info} устарел. Используйте:\n\n{ram_using} - использованная RAM\n{ram_total} - всего RAM\n{rom_using} - использованная память\n{rom_total} - всего памяти</b>"
     }
-
+    
     def __init__(self):
         self.config = loader.ModuleConfig(
             "custom_info_text",
@@ -35,6 +37,7 @@ class CustomInfoMod(loader.Module):
             "<emoji document_id=5391034312759980875>🥷</emoji><b> OC: {os_name} {os_version}</b>\n"
             "<emoji document_id=5235588635885054955>🎲</emoji> <b>Процессор:</b> <b>{cpu_info}</b>",
             lambda: "Шаблон для вывода информации",
+            
             "banner_url",
             "https://x0.at/7uTU.mp4",
             lambda: "URL баннера, который будет отправлен с информацией (None чтобы отключить)"
@@ -71,7 +74,7 @@ class CustomInfoMod(loader.Module):
             return used, total
         except:
             return 0, 0
-
+            
     @loader.command()
     async def cinfo(self, message):
         """Показать информацию о юзерботе"""
@@ -83,7 +86,7 @@ class CustomInfoMod(loader.Module):
         except:
             branch = "unknown"
             update_status = "Невозможно проверить обновления"
-
+            
         start = time.perf_counter_ns()
         msg = await message.client.send_message("me", '⏳')
         ping = round((time.perf_counter_ns() - start) / 10**6, 3)
@@ -92,23 +95,32 @@ class CustomInfoMod(loader.Module):
         ram_used, ram_total = self.get_ram_info()
         disk_used, disk_total = self.get_disk_info()
 
-        info = self.config["custom_info_text"].format(
-            owner=self._client.hikka_me.first_name + ' ' + (self._client.hikka_me.last_name or ''),
-            version='3.0.0',
-            branch=branch,
-            update_status=update_status,
-            prefix=self.get_prefix(),
-            ping=ping,
-            uptime=utils.formatted_uptime(),
-            ram_using=ram_used,
-            ram_total=ram_total,
-            rom_using=disk_used,
-            rom_total=disk_total,
-            os_name=platform.system(),
-            os_version=platform.release(),
-            cpu_info=self.get_cpu_info()
-        )
+        template = self.config["custom_info_text"]
+        
+        # Create format dict
+        format_dict = {
+            "owner": self._client.hikka_me.first_name + ' ' + (self._client.hikka_me.last_name or ''),
+            "version": '3.0.0',
+            "branch": branch,
+            "update_status": update_status,
+            "prefix": self.get_prefix(),
+            "ping": ping,
+            "uptime": utils.formatted_uptime(),
+            "ram_using": ram_used,
+            "ram_total": ram_total,
+            "rom_using": disk_used,
+            "rom_total": disk_total,
+            "os_name": platform.system(),
+            "os_version": platform.release(),
+            "cpu_info": self.get_cpu_info()
+        }
 
+        # If old format is used, add system_info to format dict
+        if "{system_info}" in template:
+            format_dict["system_info"] = self.strings["old_format_warning"]
+
+        info = template.format(**format_dict)
+        
         reply_to = await message.get_reply_message()
         thread = getattr(message, 'message_thread_id', None)
 
