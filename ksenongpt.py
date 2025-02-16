@@ -7,9 +7,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 # meta developer: @kmodules
-# changelog: Фикс, добавлена команда .setmodel
+# changelog: Фиксы, обновитесь обязательно 
 
-__version__ = (1, 5, 2)
+__version__ = (1, 5, 4)
 version = __version__
 
 @loader.tds
