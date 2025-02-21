@@ -17,6 +17,7 @@ class HowMuchMod(loader.Module):
         "no_template": "<emoji document_id=5219901967916084166>💥</emoji> <b>Шаблон {} не найден.</b>",
         "template_exists": "<emoji document_id=5220070652756635426>👀</emoji> <b>Шаблон уже существует.</b>",
         "template_added": "<emoji document_id=5219899949281453881>✅</emoji> <b>Шаблон был добавлен.</b>",
+        "template_deleted": "<emoji document_id=5260424249914435335>♨️</emoji> <b>Шаблон {} был удалён.</b>",
         "templates": "<emoji document_id=5420239291508868251>⭐️</emoji> <b>Шаблоны:</b>\n\n{}\n\n<emoji document_id=5116368680279606270>♥️</emoji><b> Используйте шаблоны через .howmuch &lt;шаблон&gt;.\n</b><emoji document_id=5085022089103016925>⚡️</emoji><b> Создайте шаблон через</b> <b>.addtemplate &lt;title&gt; &lt;emoji&gt;</b>",
         "backup_done": "<emoji document_id=5251429849662243654>🦋</emoji> <b>Бэкап шаблонов.</b>",
         "restore_done": "<emoji document_id=5251333384696776743>⚡️</emoji> <b>Шаблоны были вставлены.</b>",
@@ -121,6 +122,26 @@ class HowMuchMod(loader.Module):
         await utils.answer(message, self.strings["template_added"])
 
     @loader.command()
+    async def deltemplate(self, message: Message):
+        """Удалить пользовательский шаблон"""
+        args = utils.get_args_raw(message)
+        if not args:
+            await utils.answer(message, self.strings["no_template"].format(""))
+            return
+
+        template = self.get_template(args)
+        if not template:
+            await utils.answer(message, self.strings["no_template"].format(args))
+            return
+
+        if template in self.default_templates:
+            await utils.answer(message, self.strings["no_template"].format(args))
+            return
+
+        del self.config["templates"][template]
+        await utils.answer(message, self.strings["template_deleted"].format(template))
+
+    @loader.command()
     async def backupts(self, message: Message):
         """Сделать бэкап пользовательских шаблонов"""
         user_templates = {}
@@ -153,4 +174,3 @@ class HowMuchMod(loader.Module):
             await utils.answer(message, self.strings["restore_done"])
         except Exception:
             await utils.answer(message, self.strings["no_reply"])
-                               
