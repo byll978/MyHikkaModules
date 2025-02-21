@@ -43,7 +43,10 @@ class HowMuchMod(loader.Module):
         self.config = loader.ModuleConfig(
             "templates",
             self.default_templates.copy(),
-            "Конфиг шаблонов"
+            "Конфиг шаблонов",
+            "buttons",
+            False,
+            "Включить/выключить кнопку Перепройти"
         )
 
     def get_result(self, emoji, template, percent):
@@ -71,14 +74,18 @@ class HowMuchMod(loader.Module):
 
         percent = random.randint(0, 100)
         emoji = self.config["templates"][template]
+        result_text = self.get_result(emoji, template, percent)
         
-        await self.inline.form(
-            message=message,
-            text=self.get_result(emoji, template, percent),
-            reply_markup=[
-                [{"text": f"{emoji} Перепройти", "callback": self.retry_callback, "args": (template,)}]
-            ]
-        )
+        if self.config["buttons"]:
+            await self.inline.form(
+                message=message,
+                text=result_text,
+                reply_markup=[
+                    [{"text": f"{emoji} Перепройти", "callback": self.retry_callback, "args": (template,)}]
+                ]
+            )
+        else:
+            await utils.answer(message, result_text)
 
     async def retry_callback(self, call: InlineCall, template: str):
         percent = random.randint(0, 100)
