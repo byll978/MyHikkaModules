@@ -20,3 +20,4 @@ russianroulette
 kaccountdata
 genderguesser
 krandomuser
+howmuch
