@@ -2,7 +2,7 @@ from .. import loader, utils
 from telethon.tl.functions.messages import ImportChatInviteRequest
 import asyncio
 from datetime import datetime
-from dateutil.relativedelta import relativedelta
+from python-dateutil.relativedelta import relativedelta
 import numpy as np
 import time
 
